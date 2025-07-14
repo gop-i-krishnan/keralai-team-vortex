@@ -1,0 +1,132 @@
+# JalSetu configuration — ALL numeric constants live here.
+# Constitution P3: every value has source_status (sourced|assumed) + note.
+# Never hardcode these values in Python source files.
+
+meta:
+  version: "1.0.0"
+  currency: "INR"
+  distance_unit: "km"
+
+# ── Road transport ────────────────────────────────────────────────────────────
+road:
+  rate_per_t_km:
+    value: 10.2
+    source_status: assumed
+    note: "Kerala door-to-door road freight ~Rs 9,000 for 10t over ~88km Kochi–Alappuzha (Rs 10.2/t·km). No primary tariff survey."
+  avg_speed_kmh:
+    value: 40.0
+    source_status: assumed
+    note: "NH/SH average including town congestion for Kerala corridors."
+  co2_kg_per_t_km:
+    value: 0.062
+    source_status: sourced
+    note: "IPCC AR6 WG3 Table 10.1 median for road freight (diesel HGV), 2022."
+  road_factor:
+    value: 1.8
+    source_status: assumed
+    note: "Straight-line to road-distance multiplier for Kochi–Alappuzha; road route is ~88km vs ~49km crow-fly."
+
+# ── Water transport ───────────────────────────────────────────────────────────
+water:
+  speed_kmh:
+    value: 12.0
+    source_status: assumed
+    note: "Typical Kerala inland vessel cruising speed on National Waterway 3."
+  loading_cost_per_t:
+    value: 80.0
+    source_status: assumed
+    note: "Jetty loading charge estimate; no published tariff found for minor jetties."
+  unloading_cost_per_t:
+    value: 80.0
+    source_status: assumed
+    note: "Jetty unloading charge estimate; same assumption as loading."
+  water_freight_rate_per_t:
+    value: 420.0
+    source_status: assumed
+    note: "Estimated inland water freight Rs 420/t for ~80 km Kochi–Alappuzha corridor."
+  co2_kg_per_t_km:
+    value: 0.019
+    source_status: sourced
+    note: "IPCC AR6 WG3 Table 10.1 median for inland waterway freight, 2022."
+  min_viable_weight_t:
+    value: 2.0
+    source_status: assumed
+    note: "Minimum commercial shipment weight for inland vessel operations."
+  subsidy_fraction:
+    value: 0.20
+    source_status: assumed
+    note: "Hypothetical 20% subsidy on water-leg freight; no confirmed Kerala scheme for short routes."
+
+# ── Reliability weights ───────────────────────────────────────────────────────
+reliability:
+  road_base_score:
+    value: 0.85
+    source_status: assumed
+    note: "Road reliability score; accounts for traffic variability on Kerala roads."
+  water_base_score:
+    value: 0.78
+    source_status: assumed
+    note: "Water reliability score; lower due to tidal/seasonal factors on NW-3."
+  monsoon_penalty:
+    value: 0.10
+    source_status: assumed
+    note: "Reliability reduction for water mode during June–September monsoon months."
+  night_sailing_penalty:
+    value: 0.05
+    source_status: assumed
+    note: "Small reliability reduction for sailings departing after 20:00 IST."
+
+# ── Scoring / normalisation ───────────────────────────────────────────────────
+scoring:
+  weights:
+    cost: 0.40
+    time: 0.35
+    co2: 0.15
+    reliability: 0.10
+  deadline_buffer_h:
+    value: 0.5
+    source_status: assumed
+    note: "Safety buffer subtracted from deadline before checking time feasibility."
+
+# ── Matching / backhaul / pooling ─────────────────────────────────────────────
+matching:
+  fuzzy_match_cutoff:
+    value: 70
+    source_status: assumed
+    note: "RapidFuzz WRatio threshold for node name fuzzy matching (0–100)."
+  proximity_radius_km:
+    value: 5.0
+    source_status: assumed
+    note: "Max crow-fly distance between a cargo origin and a vessel jetty to be considered nearby."
+  max_pool_weight_fraction:
+    value: 0.30
+    source_status: assumed
+    note: "Max fraction of vessel capacity that any single pooled cargo may occupy."
+
+# ── Viability / break-even ────────────────────────────────────────────────────
+viability:
+  min_demand_t_per_month:
+    value: 50.0
+    source_status: assumed
+    note: "Minimum monthly tonnage for a corridor to be considered commercially viable."
+  breakeven_formula:
+    note: "d* = F_total / road_rate_per_t_km where F_total = loading + unloading + water_freight_rate"
+
+# ── LLM / parsing ─────────────────────────────────────────────────────────────
+llm:
+  confidence_threshold:
+    value: 0.75
+    source_status: assumed
+    note: "Parse confidence below this value triggers human review prompt."
+  model_id:
+    value: "ibm/granite-13b-chat-v2"
+    source_status: sourced
+    note: "IBM watsonx.ai Granite chat model; used only when JALSETU_MOCK_LLM=0."
+
+# ── Demo / seed reference ─────────────────────────────────────────────────────
+demo:
+  reference_weight_t: 10
+  reference_origin: "Kochi Thevara Jetty"
+  reference_destination: "Alappuzha Boat Jetty"
+  deadline_hybrid_h: 10
+  deadline_road_h: 3

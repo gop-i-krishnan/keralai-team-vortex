@@ -1,0 +1,158 @@
+{
+  "nodes": [
+    {
+      "id": "node-001",
+      "name": "Kochi Thevara Jetty",
+      "alternate_names": ["Thevara", "Kochi Thevara", "Thevara Jetty"],
+      "lat": 9.9312,
+      "lon": 76.2673,
+      "type": "jetty",
+      "source_status": "assumed",
+      "note": "Approximate coordinates; Thevara ferry terminal, Kochi."
+    },
+    {
+      "id": "node-002",
+      "name": "Alappuzha Boat Jetty",
+      "alternate_names": ["Alappuzha", "Alleppey", "Alappuzha Jetty", "Alleppey Jetty"],
+      "lat": 9.4981,
+      "lon": 76.3388,
+      "type": "jetty",
+      "source_status": "assumed",
+      "note": "Approximate coordinates; main boat jetty, Alappuzha."
+    },
+    {
+      "id": "node-003",
+      "name": "Kollam Jetty",
+      "alternate_names": ["Kollam", "Quilon"],
+      "lat": 8.8932,
+      "lon": 76.6141,
+      "type": "jetty",
+      "source_status": "assumed",
+      "note": "Approximate coordinates; Kollam boat jetty on NW-3."
+    }
+  ],
+  "vessels": [
+    {
+      "id": "vessel-001",
+      "name": "MV Backwater Star",
+      "capacity_t": 25,
+      "operator_id": "op-001",
+      "source_status": "assumed",
+      "note": "Simulated vessel; capacity typical for Kerala inland cargo barge."
+    },
+    {
+      "id": "vessel-002",
+      "name": "MV Kuttanad Express",
+      "capacity_t": 15,
+      "operator_id": "op-002",
+      "source_status": "assumed",
+      "note": "Simulated smaller cargo vessel for short corridors."
+    }
+  ],
+  "operators": [
+    {
+      "id": "op-001",
+      "name": "Kerala Backwater Freight Co.",
+      "contact": "simulated@kbfc.example",
+      "source_status": "assumed",
+      "note": "Simulated operator — no real personal data."
+    },
+    {
+      "id": "op-002",
+      "name": "Kuttanad Waterways Ltd.",
+      "contact": "simulated@kwl.example",
+      "source_status": "assumed",
+      "note": "Simulated operator — no real personal data."
+    }
+  ],
+  "sailings": [
+    {
+      "id": "sailing-001",
+      "vessel_id": "vessel-001",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "departure_time": "06:00",
+      "days": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+      "available_capacity_t": 25,
+      "source_status": "assumed",
+      "note": "Simulated daily sailing Kochi Thevara → Alappuzha 06:00."
+    },
+    {
+      "id": "sailing-002",
+      "vessel_id": "vessel-002",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "departure_time": "14:00",
+      "days": ["Mon","Wed","Fri"],
+      "available_capacity_t": 15,
+      "source_status": "assumed",
+      "note": "Simulated MWF afternoon sailing Kochi Thevara → Alappuzha 14:00."
+    }
+  ],
+  "corridors": [
+    {
+      "id": "corridor-001",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "distance_km": 75.0,
+      "source_status": "assumed",
+      "note": "Approximate waterway distance Kochi–Alappuzha via NW-3 backwaters."
+    },
+    {
+      "id": "corridor-002",
+      "origin_node_id": "node-002",
+      "destination_node_id": "node-003",
+      "distance_km": 80.0,
+      "source_status": "assumed",
+      "note": "Approximate waterway distance Alappuzha–Kollam via NW-3."
+    }
+  ],
+  "cargo": [
+    {
+      "id": "cargo-001",
+      "description": "Coconut oil cans",
+      "weight_t": 10,
+      "shipper_id": "shipper-001",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "source_status": "assumed",
+      "note": "Simulated hero shipment for reference scenario."
+    },
+    {
+      "id": "cargo-011",
+      "description": "Rice bags",
+      "weight_t": 4,
+      "shipper_id": "shipper-002",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "source_status": "assumed",
+      "note": "Simulated pooling cargo 1."
+    },
+    {
+      "id": "cargo-012",
+      "description": "Ceramic tiles",
+      "weight_t": 3,
+      "shipper_id": "shipper-003",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "source_status": "assumed",
+      "note": "Simulated pooling cargo 2."
+    },
+    {
+      "id": "cargo-013",
+      "description": "Empty containers",
+      "weight_t": 7,
+      "shipper_id": "shipper-004",
+      "origin_node_id": "node-002",
+      "destination_node_id": "node-001",
+      "source_status": "assumed",
+      "note": "Simulated backhaul cargo (reverse direction)."
+    }
+  ],
+  "shippers": [
+    {"id": "shipper-001", "name": "Simulated Shipper A", "source_status": "assumed", "note": "No real personal data."},
+    {"id": "shipper-002", "name": "Simulated Shipper B", "source_status": "assumed", "note": "No real personal data."},
+    {"id": "shipper-003", "name": "Simulated Shipper C", "source_status": "assumed", "note": "No real personal data."},
+    {"id": "shipper-004", "name": "Simulated Shipper D", "source_status": "assumed", "note": "No real personal data."}
+  ]
+}
