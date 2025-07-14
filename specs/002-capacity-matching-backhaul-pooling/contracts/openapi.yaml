@@ -1,0 +1,488 @@
+openapi: "3.1.0"
+info:
+  title: JalSetu API — Feature 002 Capacity Matching, Backhaul and Pooling
+  version: "1.0.0"
+  description: >
+    Extends Feature 001. Adds vessel/sailing ranking (POST /match),
+    explicit human-confirmed booking (POST /book), and backhaul + pooling retrieval
+    (GET /backhaul/{booking_id}). All calculations are deterministic. Currency: INR (₹).
+    Weights: tonnes. Times: IST (HH:MM).
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+
+  /match:
+    post:
+      operationId: matchSailings
+      summary: Rank vessels and sailings for a water or hybrid shipment
+      description: >
+        Applies hard filters then weighted scoring to all sailings in the seed data.
+        Returns a ranked list (passed filters, sorted by score descending) and an
+        excluded list (failed filters, with reason). Read-only — no state change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchRequest"
+            examples:
+              hero_match:
+                summary: Reference shipment match — expect sailing-001 in ranked list
+                value:
+                  cargo_type: construction_sand
+                  weight_t: 10
+                  origin_node: kochi-maradu
+                  destination_node: alappuzha-depot
+                  ready_time: "08:00"
+                  deadline: "18:00"
+                  plan_mode: water
+              overweight_match:
+                summary: Overweight shipment — expect all sailings excluded
+                value:
+                  cargo_type: gravel
+                  weight_t: 200
+                  origin_node: kochi-maradu
+                  destination_node: alappuzha-depot
+                  ready_time: "08:00"
+                  deadline: "18:00"
+                  plan_mode: water
+      responses:
+        "200":
+          description: Matching complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /book:
+    post:
+      operationId: bookSailing
+      summary: Preview or confirm a booking on a specific sailing
+      description: >
+        When human_confirmed=false (default): returns a preview summary with no state
+        change. The UI MUST display this summary and require an explicit user action
+        before resubmitting with human_confirmed=true.
+
+        When human_confirmed=true: records the booking, decrements sailing capacity,
+        and immediately returns backhaul and pooling suggestions.
+
+        HTTP 409 is returned if capacity has been exhausted since the preview was shown.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookRequest"
+            examples:
+              preview:
+                summary: Preview (no state change)
+                value:
+                  sailing_id: sailing-001
+                  cargo_type: construction_sand
+                  weight_t: 10
+                  origin_node: kochi-maradu
+                  destination_node: alappuzha-depot
+                  ready_time: "08:00"
+                  deadline: "18:00"
+                  human_confirmed: false
+              confirmed:
+                summary: Confirmed booking (state change + backhaul/pooling)
+                value:
+                  sailing_id: sailing-001
+                  cargo_type: construction_sand
+                  weight_t: 10
+                  origin_node: kochi-maradu
+                  destination_node: alappuzha-depot
+                  ready_time: "08:00"
+                  deadline: "18:00"
+                  human_confirmed: true
+      responses:
+        "200":
+          description: Preview or confirmed booking returned
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/BookPreviewResponse"
+                  - $ref: "#/components/schemas/BookConfirmedResponse"
+                discriminator:
+                  propertyName: preview
+        "409":
+          description: Capacity exhausted since preview — sailing no longer available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapacityError"
+        "404":
+          description: Sailing id not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /backhaul/{booking_id}:
+    get:
+      operationId: getBackhaul
+      summary: Retrieve backhaul and pooling suggestions for a confirmed booking
+      description: >
+        Re-computes backhaul and pooling suggestions against current live state.
+        Returns empty lists (not an error) when no opportunities exist.
+        Returns HTTP 404 if the booking_id is not found — including after a demo reset.
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "a3f1c2d4e5b6789012345678901234ab"
+      responses:
+        "200":
+          description: Suggestions returned (may be empty lists)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BackhaulResponse"
+        "404":
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+
+components:
+  schemas:
+
+    MatchRequest:
+      type: object
+      required: [cargo_type, weight_t, origin_node, destination_node]
+      properties:
+        cargo_type:
+          type: string
+        weight_t:
+          type: number
+          exclusiveMinimum: 0
+        origin_node:
+          type: string
+        destination_node:
+          type: string
+        ready_time:
+          type: string
+          pattern: "^[0-2][0-9]:[0-5][0-9]$"
+          default: "08:00"
+        deadline:
+          type: string
+          pattern: "^[0-2][0-9]:[0-5][0-9]$"
+          default: "18:00"
+        objective:
+          type: string
+          enum: [cheapest, fastest, greenest, most_reliable, balanced]
+          default: cheapest
+        subsidy_enabled:
+          type: boolean
+          default: false
+        plan_mode:
+          type: string
+          enum: [water, hybrid]
+          default: water
+
+    BookRequest:
+      type: object
+      required: [sailing_id, cargo_type, weight_t, origin_node, destination_node]
+      properties:
+        sailing_id:
+          type: string
+        cargo_type:
+          type: string
+        weight_t:
+          type: number
+          exclusiveMinimum: 0
+        origin_node:
+          type: string
+        destination_node:
+          type: string
+        ready_time:
+          type: string
+          default: "08:00"
+        deadline:
+          type: string
+          default: "18:00"
+        human_confirmed:
+          type: boolean
+          default: false
+          description: >
+            MUST be explicitly set to true by the user after reviewing the preview.
+            The API will not auto-confirm; false always returns a preview with no state change.
+
+    SubScoreOut:
+      type: object
+      required: [factor, raw, reason]
+      properties:
+        factor:
+          type: string
+          enum: [capacity_fit, proximity, schedule_slack, price, reliability]
+        raw:
+          type: number
+          minimum: 0
+          maximum: 1
+        reason:
+          type: string
+          example: "Schedule slack of 3.5 h gives score 0.58"
+
+    MatchResultOut:
+      type: object
+      required: [vessel_id, sailing_id, vessel_name, departure_time,
+                 capacity_available_t, capacity_total_t, score, sub_scores, excluded]
+      properties:
+        vessel_id:
+          type: string
+        sailing_id:
+          type: string
+        vessel_name:
+          type: string
+        departure_time:
+          type: string
+          description: HH:MM IST
+        capacity_available_t:
+          type: number
+        capacity_total_t:
+          type: number
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        sub_scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubScoreOut"
+        excluded:
+          type: boolean
+        exclusion_reason:
+          type: string
+          nullable: true
+          enum:
+            - capacity_exceeded
+            - draft_too_deep
+            - route_not_permitted
+            - deadline_not_met
+
+    MatchResponse:
+      type: object
+      required: [ranked, excluded, meta]
+      properties:
+        ranked:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchResultOut"
+          description: Sorted descending by score; may be empty
+        excluded:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchResultOut"
+          description: Failed hard filters; may be empty
+        meta:
+          $ref: "#/components/schemas/MetaBlock"
+
+    BookPreviewResponse:
+      type: object
+      required: [preview, sailing_id, vessel_name, departure_time, weight_t,
+                 estimated_cost_inr, meta]
+      properties:
+        preview:
+          type: boolean
+          enum: [true]
+          description: Discriminator — always true for preview responses
+        sailing_id:
+          type: string
+        vessel_name:
+          type: string
+        departure_time:
+          type: string
+        weight_t:
+          type: number
+        estimated_cost_inr:
+          type: number
+          description: Water-leg freight + handling cost estimate in INR
+        meta:
+          $ref: "#/components/schemas/MetaBlock"
+
+    BackhaulSuggestionOut:
+      type: object
+      required: [cargo_request_id, weight_t, backhaul_cost_inr, detour_km,
+                 price_effect_owner_inr, price_effect_requester_inr, source_status]
+      properties:
+        cargo_request_id:
+          type: string
+        weight_t:
+          type: number
+        backhaul_cost_inr:
+          type: number
+        detour_km:
+          type: number
+          description: Additional vessel distance; 0.0 for same-route return
+        price_effect_owner_inr:
+          type: number
+          description: Cost to the backhaul cargo owner (positive = they pay this)
+        price_effect_requester_inr:
+          type: number
+          description: Revenue effect for the original requester (negative = revenue gain)
+        source_status:
+          type: string
+          enum: [sourced, assumed]
+
+    PoolingSuggestionOut:
+      type: object
+      required: [cargo_request_id, weight_t, utilisation_pct,
+                 cost_per_tonne_inr, source_status]
+      properties:
+        cargo_request_id:
+          type: string
+        weight_t:
+          type: number
+        utilisation_pct:
+          type: number
+          description: Vessel utilisation % after adding this pooled load
+        cost_per_tonne_inr:
+          type: number
+          description: Combined cost per tonne for all loads on this sailing
+        source_status:
+          type: string
+          enum: [sourced, assumed]
+
+    BookConfirmedResponse:
+      type: object
+      required: [booking_id, sailing_id, vessel_name, departure_time, weight_t,
+                 confirmed_cost_inr, backhaul_suggestions, pooling_suggestions, meta]
+      properties:
+        preview:
+          type: boolean
+          enum: [false]
+          description: Discriminator — always false (absent) for confirmed responses
+          nullable: true
+        booking_id:
+          type: string
+          description: uuid4 hex string; use for GET /backhaul/{booking_id}
+          example: "a3f1c2d4e5b6789012345678901234ab"
+        sailing_id:
+          type: string
+        vessel_name:
+          type: string
+        departure_time:
+          type: string
+        weight_t:
+          type: number
+        confirmed_cost_inr:
+          type: number
+        backhaul_suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/BackhaulSuggestionOut"
+          description: Empty list when no opportunities exist
+        pooling_suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PoolingSuggestionOut"
+          description: Empty list when no opportunities exist
+        meta:
+          $ref: "#/components/schemas/MetaBlock"
+
+    BackhaulResponse:
+      type: object
+      required: [booking_id, backhaul_suggestions, pooling_suggestions, meta]
+      properties:
+        booking_id:
+          type: string
+        backhaul_suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/BackhaulSuggestionOut"
+        pooling_suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PoolingSuggestionOut"
+        meta:
+          $ref: "#/components/schemas/MetaBlock"
+
+    MetaBlock:
+      type: object
+      required: [model, assumptions, disclaimer]
+      properties:
+        model:
+          type: string
+          example: "deterministic"
+        assumptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigRef"
+        disclaimer:
+          type: string
+          example: "All rates are assumed placeholder values, not real market quotes."
+
+    ConfigRef:
+      type: object
+      required: [key, value, source_status, note]
+      properties:
+        key:
+          type: string
+        value:
+          oneOf:
+            - type: number
+            - type: string
+        source_status:
+          type: string
+          enum: [sourced, assumed]
+        note:
+          type: string
+
+    CapacityError:
+      type: object
+      required: [error, detail]
+      properties:
+        error:
+          type: string
+          example: CapacityExhausted
+        detail:
+          type: string
+          example: "Insufficient capacity — please select another sailing."
+
+    NotFoundError:
+      type: object
+      required: [error, detail]
+      properties:
+        error:
+          type: string
+          example: NotFound
+        detail:
+          type: string
+          example: "Booking id not found."
+
+    ValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  type: string
+              msg:
+                type: string
+              type:
+                type: string

@@ -1,0 +1,383 @@
+openapi: "3.1.0"
+info:
+  title: JalSetu API — Feature 001 Shipment Decision Engine
+  version: "1.0.0"
+  description: >
+    Deterministic multi-modal shipment comparison engine for Kerala inland waterway
+    logistics. All calculations are pure deterministic code; no LLM calls occur inside
+    the engine. Every response includes a meta block with assumptions and source_status
+    tags. Currency: INR (₹). Weights: tonnes. Times: IST (HH:MM).
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+
+  /options:
+    post:
+      operationId: computeOptions
+      summary: Compute road, water, and hybrid shipment plans
+      description: >
+        Returns exactly three plans (road, water, hybrid). Plans that are physically
+        impossible carry not_viable=true and a reason code instead of cost/time figures.
+        One plan is marked recommended for the chosen objective among plans where
+        deadline_ok=true. If no plan meets the deadline, no_plan_meets_deadline=true
+        and fallback_plan_mode names the fastest plan.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShipmentRequest"
+            examples:
+              reference_10h:
+                summary: Reference scenario — 10 h deadline (expect hybrid recommended)
+                value:
+                  cargo_type: construction_sand
+                  weight_t: 10
+                  origin_node: kochi-maradu
+                  destination_node: alappuzha-depot
+                  ready_time: "08:00"
+                  deadline: "18:00"
+                  objective: cheapest
+                  subsidy_enabled: false
+              reference_3h:
+                summary: Reference scenario — 3 h deadline (expect road recommended)
+                value:
+                  cargo_type: construction_sand
+                  weight_t: 10
+                  origin_node: kochi-maradu
+                  destination_node: alappuzha-depot
+                  ready_time: "08:00"
+                  deadline: "11:00"
+                  objective: cheapest
+                  subsidy_enabled: false
+              subsidy_on:
+                summary: Reference scenario with subsidy toggle enabled
+                value:
+                  cargo_type: construction_sand
+                  weight_t: 10
+                  origin_node: kochi-maradu
+                  destination_node: alappuzha-depot
+                  ready_time: "08:00"
+                  deadline: "18:00"
+                  objective: cheapest
+                  subsidy_enabled: true
+      responses:
+        "200":
+          description: Plans computed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptionsResponse"
+        "422":
+          description: Validation error (invalid node id, weight ≤ 0, unknown objective)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "500":
+          description: Engine error (e.g. missing required config key)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EngineError"
+
+  /demo/reset:
+    post:
+      operationId: resetDemo
+      summary: Reset in-memory state to seed data
+      description: >
+        Restores the in-memory store to its original seed snapshot without restarting
+        the server. Booking state (Feature 002) is also cleared. Safe to call at any time.
+      responses:
+        "200":
+          description: Reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: reset
+                  message:
+                    type: string
+                    example: "Demo state restored to seed."
+
+  /config/assumptions:
+    get:
+      operationId: getAssumptions
+      summary: Return all config values used by the engine
+      description: >
+        Returns the full list of configuration constants, each tagged with source_status
+        ("sourced" or "assumed") and a human-readable note. Use this to display the
+        prototype disclaimer to users.
+      responses:
+        "200":
+          description: Config values returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assumptions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ConfigRef"
+                  disclaimer:
+                    type: string
+                    example: "All rates are assumed placeholder values, not real market quotes."
+
+components:
+  schemas:
+
+    ShipmentRequest:
+      type: object
+      required: [cargo_type, weight_t, origin_node, destination_node]
+      properties:
+        cargo_type:
+          type: string
+          example: construction_sand
+        weight_t:
+          type: number
+          exclusiveMinimum: 0
+          example: 10
+        origin_node:
+          type: string
+          description: Node id from seed data
+          example: kochi-maradu
+        destination_node:
+          type: string
+          description: Node id from seed data
+          example: alappuzha-depot
+        ready_time:
+          type: string
+          pattern: "^[0-2][0-9]:[0-5][0-9]$"
+          default: "08:00"
+          description: HH:MM in IST; defaults to 08:00 if omitted
+          example: "08:00"
+        deadline:
+          type: string
+          pattern: "^[0-2][0-9]:[0-5][0-9]$"
+          default: "18:00"
+          description: HH:MM in IST; defaults to 18:00 if omitted
+          example: "18:00"
+        objective:
+          type: string
+          enum: [cheapest, fastest, greenest, most_reliable, balanced]
+          default: cheapest
+        subsidy_enabled:
+          type: boolean
+          default: false
+          description: >
+            When true, applies a configured subsidy percentage to the water-leg freight
+            cost only. This is a what-if scenario; the toggle defaults to false.
+
+    ConfigRef:
+      type: object
+      required: [key, value, source_status, note]
+      properties:
+        key:
+          type: string
+          example: road_rate_per_tkm
+        value:
+          oneOf:
+            - type: number
+            - type: string
+          example: 3.5
+        source_status:
+          type: string
+          enum: [sourced, assumed]
+          example: assumed
+        note:
+          type: string
+          example: "Placeholder; tuned to produce ~Rs.9,000 for reference scenario"
+
+    LegOut:
+      type: object
+      required: [mode, from_node, to_node, distance_km, cost_inr, time_h, co2_kg]
+      properties:
+        mode:
+          type: string
+          enum: [road, water, handling, waiting]
+        from_node:
+          type: string
+        to_node:
+          type: string
+          description: Same as from_node for handling and waiting legs
+        distance_km:
+          type: number
+          description: 0.0 for handling and waiting legs
+        cost_inr:
+          type: number
+          description: Cost in Indian Rupees
+        time_h:
+          type: number
+          description: Duration in hours
+        co2_kg:
+          type: number
+          description: CO₂ estimate in kg
+        config_values_used:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigRef"
+
+    ReliabilityOut:
+      type: object
+      required: [score, sub_scores, reasons, label]
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        sub_scores:
+          type: object
+          additionalProperties:
+            type: number
+          example:
+            buffer: 0.85
+            depth: 0.90
+            ontime: 0.87
+        reasons:
+          type: array
+          items:
+            type: string
+          example:
+            - "Schedule buffer of 2.5 h gives buffer score 0.85"
+            - "Draft margin of 0.9 m gives depth score 0.90"
+            - "Vessel on-time rate 0.87"
+        label:
+          type: string
+          example: "simulated model"
+
+    PlanOut:
+      type: object
+      required: [mode_label, legs, total_cost_inr, total_time_h, total_co2_kg,
+                 reliability, deadline_ok, recommended, not_viable]
+      properties:
+        mode_label:
+          type: string
+          enum: [road, water, hybrid]
+        legs:
+          type: array
+          items:
+            $ref: "#/components/schemas/LegOut"
+        total_cost_inr:
+          type: number
+          description: Sum of all leg costs in INR
+        effective_cost_inr:
+          type: number
+          nullable: true
+          description: >
+            Cost after subsidy applied to water-leg freight only. Present only when
+            subsidy_enabled=true and plan includes a water leg. Null otherwise.
+        total_time_h:
+          type: number
+          description: Door-to-door time including handling and waiting, in hours
+        total_co2_kg:
+          type: number
+        reliability:
+          $ref: "#/components/schemas/ReliabilityOut"
+        deadline_ok:
+          type: boolean
+          description: True if total_time_h ≤ (deadline - ready_time)
+        recommended:
+          type: boolean
+          description: True for the single plan recommended for the chosen objective
+        objective:
+          type: string
+          nullable: true
+          description: The objective this plan was recommended for; null if not recommended
+        why_text:
+          type: string
+          nullable: true
+          description: Plain-language explanation of why this plan is recommended
+        not_viable:
+          type: boolean
+        not_viable_reason:
+          type: string
+          nullable: true
+          enum:
+            - no_sailing_available
+            - cargo_exceeds_all_vessel_capacity
+            - no_jetty_within_radius:origin
+            - no_jetty_within_radius:destination
+          description: Present when not_viable=true
+        assumptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigRef"
+          description: Union of all config values used to compute this plan
+
+    MetaBlock:
+      type: object
+      required: [model, assumptions, disclaimer]
+      properties:
+        model:
+          type: string
+          example: "deterministic|simulated"
+          description: >
+            "deterministic" for cost/time/CO₂; "simulated" for reliability score.
+            Both apply here so both labels are shown.
+        assumptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigRef"
+          description: All config values used across all three plans in this response
+        disclaimer:
+          type: string
+          example: "All rates are assumed placeholder values, not real market quotes."
+
+    OptionsResponse:
+      type: object
+      required: [plans, no_plan_meets_deadline, objective, subsidy_enabled, meta]
+      properties:
+        plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanOut"
+          minItems: 3
+          maxItems: 3
+          description: Always road, water, hybrid in that order
+        no_plan_meets_deadline:
+          type: boolean
+        fallback_plan_mode:
+          type: string
+          nullable: true
+          description: Mode of fastest plan when no_plan_meets_deadline=true
+        objective:
+          type: string
+        subsidy_enabled:
+          type: boolean
+        meta:
+          $ref: "#/components/schemas/MetaBlock"
+
+    ValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  type: string
+              msg:
+                type: string
+              type:
+                type: string
+
+    EngineError:
+      type: object
+      required: [error, detail]
+      properties:
+        error:
+          type: string
+          example: ConfigError
+        detail:
+          type: string
+          example: "Missing required config key: road_rate_per_tkm"

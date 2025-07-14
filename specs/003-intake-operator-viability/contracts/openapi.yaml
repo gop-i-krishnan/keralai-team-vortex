@@ -1,0 +1,445 @@
+openapi: "3.1.0"
+info:
+  title: JalSetu API — Feature 003 Intake, Operator Channel and Viability View
+  version: "1.0.0"
+  description: >
+    Extends Features 001–002. Adds natural-language shipment parsing (POST /parse),
+    operator scripted chat (POST /operator/message), and corridor viability data
+    (GET /viability). The LLM is used only for field extraction; all scoring,
+    ranking, and recommendations remain in deterministic engine code.
+    Currency: INR (₹). Weights: tonnes. Times: IST.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+
+  /parse:
+    post:
+      operationId: parseShipment
+      summary: Extract structured shipment fields from free-text input
+      description: >
+        Accepts a free-text description in English or Malayalam. Attempts LLM extraction
+        first (watsonx.ai or configured provider); falls back to regex parser if the LLM
+        is unavailable or returns invalid JSON. Always returns a ParseResponse — never
+        propagates LLM errors to the client.
+
+        The LLM ONLY extracts fields. It does not price, rank, score, or recommend.
+
+        Input text is scrubbed of phone numbers and email addresses before being sent
+        to the LLM (FR-9 / Constitution P9).
+
+        When JALSETU_MOCK_LLM=1 (offline demo / tests), the MockAdapter is used and no
+        network call is made.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParseRequest"
+            examples:
+              reference_english:
+                summary: Reference sentence (English)
+                value:
+                  text: "10 tonnes sand Kochi to Alappuzha by 6 PM tomorrow"
+              partial_malayalam:
+                summary: Partial Malayalam input
+                value:
+                  text: "കൊച്ചിയിൽ നിന്ന് ആലപ്പുഴ 5 ടൺ നാളെ"
+              relative_date_only:
+                summary: Relative date, no origin
+                value:
+                  text: "8t gravel to Vaikom by tomorrow afternoon"
+      responses:
+        "200":
+          description: Parse complete (may be partial; check confidence and warnings)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParseResponse"
+        "422":
+          description: Validation error (empty text, text too long)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /operator/message:
+    post:
+      operationId: operatorMessage
+      summary: Process a boat operator availability message (scripted demo)
+      description: >
+        Matches the input text against the scripted operator map in seed.json.
+        Returns a structured vessel listing, a reply message, and a backhaul offer
+        if one exists. Unrecognised input returns a safe fallback message.
+        No state change; no real messaging infrastructure.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperatorMessageRequest"
+            examples:
+              scripted_vaikom:
+                summary: Scripted demo message
+                value:
+                  text: "12 ton barge, vaikom, free tomorrow, going alappuzha"
+              unrecognised:
+                summary: Unrecognised message
+                value:
+                  text: "hello is anyone there"
+      responses:
+        "200":
+          description: Message processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorMessageResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /viability:
+    get:
+      operationId: getViability
+      summary: Get break-even chart data and corridor viability classifications
+      description: >
+        Returns:
+        - breakeven: the d* break-even distance and pre-computed chart point series
+        - corridors: each seeded corridor with classification (green/amber/red/unknown),
+          cost saving, CO₂ saving, and Leaflet polyline coordinates
+        - demand: request count per corridor from seed data
+
+        All values are tagged source_status="assumed". Read-only; no state change.
+      responses:
+        "200":
+          description: Viability data returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViabilityResponse"
+
+components:
+  schemas:
+
+    ParseRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: >
+            Free-text shipment description in English or Malayalam.
+            Phone numbers and email addresses are scrubbed before LLM processing.
+          example: "10 tonnes sand Kochi to Alappuzha by 6 PM tomorrow"
+
+    ParseResponse:
+      type: object
+      required: [confidence, warnings, fallback_used, meta]
+      properties:
+        cargo_type:
+          type: string
+          nullable: true
+          example: "construction_sand"
+        weight_t:
+          type: number
+          nullable: true
+          example: 10.0
+        origin_text:
+          type: string
+          nullable: true
+          example: "Kochi"
+        destination_text:
+          type: string
+          nullable: true
+          example: "Alappuzha"
+        deadline_text:
+          type: string
+          nullable: true
+          example: "by 6 PM tomorrow"
+        origin_node_id:
+          type: string
+          nullable: true
+          description: >
+            Matched node id from seed data via fuzzy matching.
+            Null if no node matched above the confidence cutoff.
+          example: "kochi-maradu"
+        destination_node_id:
+          type: string
+          nullable: true
+          example: "alappuzha-depot"
+        ready_time:
+          type: string
+          nullable: true
+          description: HH:MM IST; resolved from deadline_text; defaults to 08:00
+          example: "08:00"
+        deadline:
+          type: string
+          nullable: true
+          description: HH:MM IST; resolved from deadline_text; defaults to 18:00
+          example: "18:00"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: >
+            Parse confidence (0.0–1.0). Below configured threshold, the UI shows
+            a low-confidence warning. Always present.
+          example: 0.97
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Human-readable warnings, e.g. "origin not matched to known node"
+          example: []
+        fallback_used:
+          type: boolean
+          description: >
+            True when the regex fallback was used instead of the LLM (LLM unavailable
+            or returned invalid JSON). The UI displays "[offline parser]" badge when true.
+        meta:
+          $ref: "#/components/schemas/MetaBlock"
+
+    OperatorMessageRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "12 ton barge, vaikom, free tomorrow, going alappuzha"
+
+    OperatorMessageResponse:
+      type: object
+      required: [matched, reply_text, meta]
+      properties:
+        matched:
+          type: boolean
+          description: True if text matched a scripted entry in seed.json
+        structured_listing:
+          type: object
+          nullable: true
+          description: Structured vessel availability extracted from the scripted entry
+          properties:
+            capacity_t:
+              type: number
+            home_port:
+              type: string
+            availability_date:
+              type: string
+            destination:
+              type: string
+        reply_text:
+          type: string
+          description: >
+            Scripted acknowledgement reply, or "Not recognised — please use the manual
+            form." when unmatched.
+          example: "Got it! Your 12t barge from Vaikom to Alappuzha has been noted."
+        backhaul_offer:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/BackhaulSuggestionOut"
+          description: Top backhaul opportunity, or null if none found
+        meta:
+          $ref: "#/components/schemas/MetaBlock"
+
+    ChartPointOut:
+      type: object
+      required: [distance_km, road_cost_per_t, hybrid_cost_per_t]
+      properties:
+        distance_km:
+          type: number
+        road_cost_per_t:
+          type: number
+          description: Road cost per tonne at this distance (₹/t)
+        hybrid_cost_per_t:
+          type: number
+          description: Hybrid (flat handling + water leg) cost per tonne (₹/t)
+
+    BreakevenOut:
+      type: object
+      required: [F_total_inr, road_rate_per_tkm, not_viable,
+                 chart_points, source_status, disclaimer]
+      properties:
+        F_total_inr:
+          type: number
+          description: Total fixed hybrid overhead per tonne (loading + unloading + water freight), ₹
+        road_rate_per_tkm:
+          type: number
+          description: Road cost rate, ₹/tonne-km
+        breakeven_km:
+          type: number
+          nullable: true
+          description: Distance at which hybrid cost equals road cost; null when not_viable
+        not_viable:
+          type: boolean
+        not_viable_reason:
+          type: string
+          nullable: true
+        chart_points:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartPointOut"
+          description: Pre-computed series for x in [0, viability_chart_max_km]
+        source_status:
+          type: string
+          enum: [assumed]
+          description: All break-even values are assumed placeholder rates
+        disclaimer:
+          type: string
+          example: "Break-even distance is estimated using assumed placeholder rates."
+
+    CorridorViabilityOut:
+      type: object
+      required: [corridor_id, label, from_node, to_node, distance_km, polyline,
+                 hybrid_cost_inr, road_cost_inr, saving_pct, cost_saving_per_t,
+                 co2_saving_kg_per_t, classification, source_status]
+      properties:
+        corridor_id:
+          type: string
+        label:
+          type: string
+          example: "Kochi–Alappuzha"
+        from_node:
+          type: string
+        to_node:
+          type: string
+        distance_km:
+          type: number
+        polyline:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+            minItems: 2
+            maxItems: 2
+          description: List of [lat, lon] pairs for Leaflet polyline rendering
+          example: [[9.9312, 76.2673], [9.4981, 76.3388]]
+        hybrid_cost_inr:
+          type: number
+        road_cost_inr:
+          type: number
+        saving_pct:
+          type: number
+          description: "(road - hybrid) / road × 100; negative = road cheaper"
+        cost_saving_per_t:
+          type: number
+          description: ₹/t saved by choosing hybrid; negative if road cheaper
+        co2_saving_kg_per_t:
+          type: number
+        classification:
+          type: string
+          enum: [green, amber, red, unknown]
+          description: >
+            green = hybrid cheaper by > viability_green_margin_pct;
+            amber = hybrid cheaper by 0–green_margin;
+            red = road cheaper;
+            unknown = insufficient seed data to classify
+        source_status:
+          type: string
+          enum: [assumed]
+
+    DemandSummaryOut:
+      type: object
+      required: [corridor_label, request_count]
+      properties:
+        corridor_label:
+          type: string
+        request_count:
+          type: integer
+          minimum: 0
+
+    ViabilityResponse:
+      type: object
+      required: [breakeven, corridors, demand, meta]
+      properties:
+        breakeven:
+          $ref: "#/components/schemas/BreakevenOut"
+        corridors:
+          type: array
+          items:
+            $ref: "#/components/schemas/CorridorViabilityOut"
+        demand:
+          type: array
+          items:
+            $ref: "#/components/schemas/DemandSummaryOut"
+          description: Sorted descending by request_count
+        meta:
+          $ref: "#/components/schemas/MetaBlock"
+
+    MetaBlock:
+      type: object
+      required: [model, assumptions, disclaimer]
+      properties:
+        model:
+          type: string
+          example: "deterministic|simulated"
+        assumptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigRef"
+        disclaimer:
+          type: string
+          example: "All rates are assumed placeholder values, not real market quotes."
+
+    ConfigRef:
+      type: object
+      required: [key, value, source_status, note]
+      properties:
+        key:
+          type: string
+        value:
+          oneOf:
+            - type: number
+            - type: string
+        source_status:
+          type: string
+          enum: [sourced, assumed]
+        note:
+          type: string
+
+    BackhaulSuggestionOut:
+      type: object
+      required: [cargo_request_id, weight_t, backhaul_cost_inr, detour_km,
+                 price_effect_owner_inr, price_effect_requester_inr, source_status]
+      properties:
+        cargo_request_id:
+          type: string
+        weight_t:
+          type: number
+        backhaul_cost_inr:
+          type: number
+        detour_km:
+          type: number
+        price_effect_owner_inr:
+          type: number
+        price_effect_requester_inr:
+          type: number
+        source_status:
+          type: string
+          enum: [sourced, assumed]
+
+    ValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  type: string
+              msg:
+                type: string
+              type:
+                type: string
