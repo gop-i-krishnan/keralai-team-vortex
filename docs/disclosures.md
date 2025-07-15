@@ -7,27 +7,22 @@
 | Tool | Purpose | Notes |
 |---|---|---|
 | IBM Bob (AI coding agent) | Code generation, spec writing, task implementation | Used throughout development |
-| IBM watsonx.ai Granite-13b-chat-v2 | Natural language → structured data extraction (Feature 003) | Only when `JALSETU_MOCK_LLM=0`; no personal data sent |
+| Claude Code (Anthropic) | Code and documentation edits, audit and compliance clean-up (7 Oct 2026) | Used during development |
+| Claude Code (Anthropic) | Code and documentation edits, audit and compliance clean-up (7 Oct 2026) | Used during development |
+| IBM watsonx.ai Granite-13b-chat-v2 | Optional natural language to structured field parsing only | Off by default; used only if `JALSETU_MOCK_LLM=0`, `ibm-watsonx-ai` is installed and keys are supplied; PII scrubbed first; never prices, ranks or recommends |
 
 ## Frameworks & Libraries
 
-| Library | Version | License | Purpose |
-|---|---|---|---|
-| FastAPI | 0.111+ | MIT | Python web framework |
-| Pydantic | 2.x | MIT | Data validation |
-| PyYAML | 6.x | MIT | Config loading |
-| rapidfuzz | 3.x | MIT | Fuzzy node name matching |
-| pytest | 8.x | MIT | Test framework |
-| httpx | 0.27+ | BSD | HTTP client / test client |
-| Vite | 5.x | MIT | Frontend build tool |
-| React | 18.x | MIT | Frontend UI library |
+Full list with versions, licenses and URLs: see `ATTRIBUTIONS.md`. Direct dependencies:
+FastAPI, Starlette, Uvicorn, Pydantic, PyYAML, rapidfuzz, httpx, python-dotenv, pytest (Python);
+React, React DOM, Vite, @vitejs/plugin-react, oxlint (JavaScript).
 
 ## Data Sources
 
 | Value | Source | Status |
 |---|---|---|
-| CO₂ road freight factor | IPCC AR6 WG3 Table 10.1 (2022) | sourced |
-| CO₂ inland water factor | IPCC AR6 WG3 Table 10.1 (2022) | sourced |
+| CO₂ road freight factor | IPCC AR6 WG3 Ch.10 Table 10.1 (2022); exact value to be re-verified | sourced (unverified) |
+| CO₂ inland water factor | IPCC AR6 WG3 Ch.10 Table 10.1 (2022); exact value to be re-verified | sourced (unverified) |
 | All rates, speeds, distances | Estimated / assumed | assumed |
 | All operator/shipper names | Simulated — no real personal data | assumed |
 
