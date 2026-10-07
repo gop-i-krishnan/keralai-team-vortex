@@ -118,3 +118,49 @@ def resolve_deadline(text: str) -> Optional[float]:
         return float(hour)  # approximate: treat as deadline hour of day
 
     return None
+
+
+# ── Operator vessel message (Feature 004) ─────────────────────────────────────
+
+_VESSEL_TYPE_RE = re.compile(r'\b(barge|country boat|boat|launch|vessel|ferry)\b', re.IGNORECASE)
+_ROUTE_RE = re.compile(r'\b(?:going(?:\s+to)?|towards?|to)\s+([A-Za-z][A-Za-z ]*?)\s*(?:,|$|\.)', re.IGNORECASE)
+
+
+def parse_vessel_message(text: str) -> dict:
+    """
+    Extract vessel fields from an operator message using regex only.
+    PII is scrubbed first (P15). Never raises; missing fields are None.
+    Confidence is the sum of weights for fields found (structural, not a model score).
+    """
+    text = scrub_pii(text or "")
+    out: dict = {"capacity_t": None, "vessel_type": None, "home_raw": None, "route_hint_raw": None}
+
+    m = _WEIGHT_RE.search(text)
+    if m:
+        out["capacity_t"] = float(m.group(1)) if "." in m.group(1) else int(m.group(1))
+    m = _VESSEL_TYPE_RE.search(text)
+    if m:
+        out["vessel_type"] = m.group(1).lower()
+    m = _ROUTE_RE.search(text)
+    if m:
+        out["route_hint_raw"] = m.group(1).strip()
+
+    segments = [s.strip() for s in text.split(",")]
+    anchor = next((i for i, s in enumerate(segments) if _WEIGHT_RE.search(s)), None)
+    if anchor is not None and anchor + 1 < len(segments):
+        cand = segments[anchor + 1]
+        if (re.fullmatch(r"[A-Za-z][A-Za-z ]*", cand)
+                and not re.match(r"(?i)(free|going|call|to|available)\b", cand)):
+            out["home_raw"] = cand
+
+    conf = 0.0
+    if out["capacity_t"] is not None:
+        conf += val("vessel_parse", "weight_capacity")
+    if out["vessel_type"]:
+        conf += val("vessel_parse", "weight_type")
+    if out["home_raw"]:
+        conf += val("vessel_parse", "weight_home")
+    if out["route_hint_raw"]:
+        conf += val("vessel_parse", "weight_route")
+    out["confidence"] = round(conf, 2)
+    return out

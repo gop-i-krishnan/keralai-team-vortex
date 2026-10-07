@@ -6,6 +6,10 @@ meta:
   version: "1.0.0"
   currency: "INR"
   distance_unit: "km"
+  ist_offset_min:
+    value: 330
+    source_status: sourced
+    note: "India Standard Time is UTC+05:30 (330 minutes). Fixed offset; no tz database needed."
 
 # ── Road transport ────────────────────────────────────────────────────────────
 road:
@@ -22,12 +26,16 @@ road:
     source_status: sourced
     note: "IPCC AR6 WG3 Table 10.1 median for road freight (diesel HGV), 2022."
   road_factor:
-    value: 1.8
+    value: 1.3
     source_status: assumed
-    note: "Straight-line to road-distance multiplier for Kochi–Alappuzha; road route is ~88km vs ~49km crow-fly."
+    note: "Straight-line to road-distance multiplier. NH66 Kochi–Alappuzha is approximately 55–62 km; 1.3× on 48.8 km crow-fly gives ~63 km. Previous value of 1.8 (→88 km) overstated road distance by ~38%. Verify against NH66 mileage before production use."
 
 # ── Water transport ───────────────────────────────────────────────────────────
 water:
+  tortuosity_factor:
+    value: 1.05
+    source_status: assumed
+    note: "Water-route distance = straight-line × 1.05; NW-3 is relatively straight. Verify with IWAI charts."
   speed_kmh:
     value: 12.0
     source_status: assumed
@@ -79,10 +87,22 @@ reliability:
 # ── Scoring / normalisation ───────────────────────────────────────────────────
 scoring:
   weights:
-    cost: 0.40
-    time: 0.35
-    co2: 0.15
-    reliability: 0.10
+    cost:
+      value: 0.40
+      source_status: assumed
+      note: "Scoring weight for cost. Team choice; the four weights sum to 1.0."
+    time:
+      value: 0.35
+      source_status: assumed
+      note: "Scoring weight for time. Team choice."
+    co2:
+      value: 0.15
+      source_status: assumed
+      note: "Scoring weight for CO2. Team choice."
+    reliability:
+      value: 0.10
+      source_status: assumed
+      note: "Scoring weight for reliability. Team choice; perishable cargo overrides this (perishable.reliability_weight_override)."
   deadline_buffer_h:
     value: 0.5
     source_status: assumed
@@ -90,6 +110,14 @@ scoring:
 
 # ── Matching / backhaul / pooling ─────────────────────────────────────────────
 matching:
+  score_weight_utilisation:
+    value: 0.50
+    source_status: assumed
+    note: "Weight given to capacity utilisation in sailing rank score."
+  score_weight_schedule:
+    value: 0.50
+    source_status: assumed
+    note: "Weight given to schedule proximity in sailing rank score (currently a neutral 0.5 placeholder; improve when schedule data is richer)."
   fuzzy_match_cutoff:
     value: 70
     source_status: assumed
@@ -115,9 +143,9 @@ viability:
 # ── LLM / parsing ─────────────────────────────────────────────────────────────
 llm:
   confidence_threshold:
-    value: 0.75
+    value: 0.8
     source_status: assumed
-    note: "Parse confidence below this value triggers human review prompt."
+    note: "Parse confidence below this value triggers human review prompt. Set to 0.8 to match constitution P7 (was 0.75)."
   model_id:
     value: "ibm/granite-13b-chat-v2"
     source_status: sourced
@@ -125,8 +153,201 @@ llm:
 
 # ── Demo / seed reference ─────────────────────────────────────────────────────
 demo:
-  reference_weight_t: 10
-  reference_origin: "Kochi Thevara Jetty"
-  reference_destination: "Alappuzha Boat Jetty"
-  deadline_hybrid_h: 10
-  deadline_road_h: 3
+  reference_weight_t:
+    value: 10
+    source_status: assumed
+    note: "Reference demo shipment weight (hero scenario)."
+  reference_origin:
+    value: "Kochi Thevara Jetty"
+    source_status: assumed
+    note: "Reference demo origin; illustrative terminal name."
+  reference_destination:
+    value: "Alappuzha Boat Jetty"
+    source_status: assumed
+    note: "Reference demo destination; illustrative terminal name."
+  deadline_hybrid_h:
+    value: 10
+    source_status: assumed
+    note: "Hero scenario deadline at which hybrid is recommended; also the default booking deadline."
+  deadline_road_h:
+    value: 3
+    source_status: assumed
+    note: "Hero scenario deadline at which road is recommended."
+
+# ── Hazard rules ──────────────────────────────────────────────────────────────
+# Constitution P3: every entry has source_status: assumed.
+# Constitution P11: every entry notes "verify with IWAI / PESO / state authority before production use."
+# MUST NOT be presented as definitive regulations.
+hazard_rules:
+  - class_id: general
+    allowed_modes: ["road", "water"]
+    certification_required: false
+    human_review_required: false
+    source_status: assumed
+    notes: "Standard general cargo; no special cert required. verify with IWAI / PESO / state authority before production use."
+  - class_id: perishable
+    allowed_modes: ["road", "water"]
+    certification_required: false
+    human_review_required: false
+    source_status: assumed
+    notes: "Perishable goods (fresh produce, chilled); no hazmat cert required but time-sensitive. verify with IWAI / PESO / state authority before production use."
+  - class_id: liquid_bulk
+    allowed_modes: ["road", "water"]
+    certification_required: true
+    human_review_required: false
+    source_status: assumed
+    notes: "Liquid bulk (edible oils, chemicals); vessel must carry liquid_bulk cert. verify with IWAI / PESO / state authority before production use."
+  - class_id: flammable
+    allowed_modes: ["road", "water"]
+    certification_required: true
+    human_review_required: true
+    source_status: assumed
+    notes: "Flammable liquids and solids; vessel must be certified; compliance review required. verify with IWAI / PESO / state authority before production use."
+  - class_id: explosive
+    allowed_modes: []
+    certification_required: true
+    human_review_required: true
+    source_status: assumed
+    notes: "Explosives; no mode offered by default — special permit required. verify with IWAI / PESO / state authority before production use."
+  - class_id: toxic_corrosive
+    allowed_modes: []
+    certification_required: true
+    human_review_required: true
+    source_status: assumed
+    notes: "Toxic or corrosive substances; no mode offered by default — special permit required. verify with IWAI / PESO / state authority before production use."
+  - class_id: oversized
+    allowed_modes: ["road", "water"]
+    certification_required: false
+    human_review_required: false
+    source_status: assumed
+    notes: "Oversized or out-of-gauge cargo; no hazmat cert required; route may need special clearance not modelled here. verify with IWAI / PESO / state authority before production use."
+
+# ── Perishable cargo overrides ────────────────────────────────────────────────
+perishable:
+  schedule_buffer_h:
+    value: 1.0
+    source_status: assumed
+    note: "Tighter schedule buffer for perishable cargo (standard is 0.5 h). Assumed; verify with cold-chain logistics standards."
+  reliability_weight_override:
+    value: 0.25
+    source_status: assumed
+    note: "Elevated reliability weight for perishable cargo scoring (standard is 0.10). Must be > scoring.weights.reliability. Assumed; verify with supply-chain experts."
+
+# ── Warehouse staging ─────────────────────────────────────────────────────────
+warehouse:
+  proximity_radius_km:
+    value: 10.0
+    source_status: assumed
+    note: "Maximum Haversine distance from cargo origin node to warehouse location node for staging eligibility. Assumed default."
+  staging_wait_threshold_h:
+    value: 4.0
+    source_status: assumed
+    note: "Minimum sailing wait before a staging plan is offered (FR-8). Below this threshold, staging is not worth the extra handling cost. Assumed default."
+
+# ── Feature 004: vessel registry and delivery history ────────────────────────
+history:
+  prior_trip_count:
+    value: 5
+    source_status: assumed
+    note: "Bayesian prior weight k: a new vessel is treated as having 5 virtual trips. Chosen so one late trip does not dominate early history. Assumed."
+  prior_on_time_rate:
+    value: 0.80
+    source_status: assumed
+    note: "Prior on-time rate for vessels with little or no history (P14). Assumed; replace with corridor data when available."
+  midnight_wrap_h:
+    value: 12
+    source_status: assumed
+    note: "If actual arrival is earlier than planned by more than this many hours, it is treated as next-day arrival (HH:MM strings carry no date)."
+
+registry:
+  unverified_reliability_penalty:
+    value: 0.10
+    source_status: assumed
+    note: "Subtracted from the match score of pending_verification vessels. Assumed; verified vessels are unaffected."
+
+vessel_parse:
+  weight_capacity:
+    value: 0.35
+    source_status: assumed
+    note: "Structural confidence contribution when capacity is found in an operator message. Not a model score."
+  weight_type:
+    value: 0.15
+    source_status: assumed
+    note: "Contribution when a vessel type keyword is found."
+  weight_home:
+    value: 0.30
+    source_status: assumed
+    note: "Contribution when a home jetty phrase is found."
+  weight_route:
+    value: 0.10
+    source_status: assumed
+    note: "Contribution when a route hint is found."
+
+# ── Feature 005: milestones, disruptions, re-planning ────────────────────────
+tracking:
+  loading_lead_h:
+    value: 0.5
+    source_status: assumed
+    note: "Loading starts this many hours before sailing departure. Simulated milestone timing; no live tracking."
+  unloading_h:
+    value: 0.5
+    source_status: assumed
+    note: "Unloading time between Arrived and Delivered milestones."
+
+replan:
+  severity_minor_max_h:
+    value: 2
+    source_status: assumed
+    note: "Expected disruption below this many hours is 'minor'."
+  severity_moderate_max_h:
+    value: 6
+    source_status: assumed
+    note: "Up to this many hours is 'moderate'; above is 'severe'. Unknown duration or a missed deadline is also 'severe'."
+  wait_cost_per_t_h:
+    value: 20
+    source_status: assumed
+    note: "Rs per tonne per hour of waiting for the original plan to resume. Verify with operators."
+  road_blocked_delay_h:
+    value: 2
+    source_status: assumed
+    note: "Extra hours added to road alternatives that start at a node where the road is blocked."
+  weather_reliability_penalty:
+    value: 0.10
+    source_status: assumed
+    note: "Reliability reduction applied to water-mode alternatives under a weather delay."
+  max_alternatives:
+    value: 5
+    source_status: assumed
+    note: "Maximum number of ranked alternatives returned."
+
+notifications:
+  - type: vessel_breakdown
+    subject_en: "Vessel breakdown affecting your shipment"
+    body_en: "Cargo {cargo_id} is delayed: the vessel has broken down near {location}. Your booked deadline is {deadline}. Please review the alternatives."
+    body_ml_placeholder: "[Malayalam text placeholder — requires professional translation]"
+    source_status: assumed
+    note: "Template text is an assumption; message preview only, never sent."
+  - type: low_depth
+    subject_en: "Low water depth on your route"
+    body_en: "Cargo {cargo_id} is held: water depth is too low near {location}. Your booked deadline is {deadline}. Please review the alternatives."
+    body_ml_placeholder: "[Malayalam text placeholder — requires professional translation]"
+    source_status: assumed
+    note: "Template text is an assumption; message preview only, never sent."
+  - type: jetty_closed
+    subject_en: "Jetty closed"
+    body_en: "Cargo {cargo_id} cannot use the jetty at {location} because it is closed. Your booked deadline is {deadline}. Please review the alternatives."
+    body_ml_placeholder: "[Malayalam text placeholder — requires professional translation]"
+    source_status: assumed
+    note: "Template text is an assumption; message preview only, never sent."
+  - type: road_blocked
+    subject_en: "Road blocked near your shipment"
+    body_en: "Cargo {cargo_id}: the road is blocked near {location}. Your booked deadline is {deadline}. Please review the alternatives."
+    body_ml_placeholder: "[Malayalam text placeholder — requires professional translation]"
+    source_status: assumed
+    note: "Template text is an assumption; message preview only, never sent."
+  - type: weather_delay
+    subject_en: "Weather delay"
+    body_en: "Cargo {cargo_id} is delayed by weather near {location}. Your booked deadline is {deadline}. Please review the alternatives."
+    body_ml_placeholder: "[Malayalam text placeholder — requires professional translation]"
+    source_status: assumed
+    note: "Template text is an assumption; message preview only, never sent."

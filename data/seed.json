@@ -3,32 +3,57 @@
     {
       "id": "node-001",
       "name": "Kochi Thevara Jetty",
-      "alternate_names": ["Thevara", "Kochi Thevara", "Thevara Jetty"],
+      "alternate_names": [
+        "Thevara",
+        "Kochi Thevara",
+        "Thevara Jetty",
+        "Maradu"
+      ],
       "lat": 9.9312,
       "lon": 76.2673,
       "type": "jetty",
       "source_status": "assumed",
-      "note": "Approximate coordinates; Thevara ferry terminal, Kochi."
+      "note": "Illustrative terminal name used for demo — verify with IWAI NW-3 terminal list. Thevara is a passenger ferry terminal; Maradu is the nearest IWAI cargo terminal. Approximate coordinates only."
     },
     {
       "id": "node-002",
       "name": "Alappuzha Boat Jetty",
-      "alternate_names": ["Alappuzha", "Alleppey", "Alappuzha Jetty", "Alleppey Jetty"],
+      "alternate_names": [
+        "Alappuzha",
+        "Alleppey",
+        "Alappuzha Jetty",
+        "Alleppey Jetty"
+      ],
       "lat": 9.4981,
       "lon": 76.3388,
       "type": "jetty",
       "source_status": "assumed",
-      "note": "Approximate coordinates; main boat jetty, Alappuzha."
+      "note": "Illustrative terminal name used for demo — verify with IWAI NW-3 terminal list. Alappuzha (IWAI NW-3) is a listed cargo terminal; exact berth name and coordinates to be confirmed with IWAI."
     },
     {
       "id": "node-003",
       "name": "Kollam Jetty",
-      "alternate_names": ["Kollam", "Quilon"],
+      "alternate_names": [
+        "Kollam",
+        "Quilon"
+      ],
       "lat": 8.8932,
       "lon": 76.6141,
       "type": "jetty",
       "source_status": "assumed",
-      "note": "Approximate coordinates; Kollam boat jetty on NW-3."
+      "note": "Illustrative terminal name — verify with IWAI NW-3 terminal list. Approximate coordinates only."
+    },
+    {
+      "id": "node-004",
+      "name": "Vaikom Jetty",
+      "alternate_names": [
+        "Vaikom"
+      ],
+      "lat": 9.7487,
+      "lon": 76.3953,
+      "type": "jetty",
+      "source_status": "assumed",
+      "note": "Illustrative intermediate jetty on the Kochi–Alappuzha backwater route. Approximate coordinates only — verify with IWAI / Kerala State Water Transport Dept."
     }
   ],
   "vessels": [
@@ -37,16 +62,112 @@
       "name": "MV Backwater Star",
       "capacity_t": 25,
       "operator_id": "op-001",
-      "source_status": "assumed",
-      "note": "Simulated vessel; capacity typical for Kerala inland cargo barge."
+      "hazard_certs": [
+        "liquid_bulk"
+      ],
+      "source_status": "simulated",
+      "note": "Simulated vessel; capacity typical for Kerala inland cargo barge. Certified for liquid_bulk only [simulated].",
+      "type": "cargo barge",
+      "draft_m": 3.0,
+      "home_jetty_id": "node-001",
+      "status": "verified",
+      "registration_number": "REG-PLACEHOLDER-001",
+      "contact": "simulated@operator.example"
     },
     {
       "id": "vessel-002",
       "name": "MV Kuttanad Express",
       "capacity_t": 15,
       "operator_id": "op-002",
-      "source_status": "assumed",
-      "note": "Simulated smaller cargo vessel for short corridors."
+      "hazard_certs": [],
+      "source_status": "simulated",
+      "note": "Simulated smaller cargo vessel for short corridors. No hazmat certs [simulated].",
+      "type": "country boat",
+      "draft_m": 1.8,
+      "home_jetty_id": "node-001",
+      "status": "verified",
+      "registration_number": "REG-PLACEHOLDER-002",
+      "contact": "simulated@operator.example"
+    },
+    {
+      "id": "vessel-003",
+      "name": "MV Periyar Carrier",
+      "capacity_t": 20,
+      "operator_id": "op-001",
+      "hazard_certs": [
+        "flammable",
+        "liquid_bulk"
+      ],
+      "source_status": "simulated",
+      "note": "Simulated vessel certified for flammable and liquid_bulk cargo. Added for Feature 006 hazmat tests [simulated].",
+      "type": "mechanised vessel",
+      "draft_m": 2.4,
+      "home_jetty_id": "node-001",
+      "status": "verified",
+      "registration_number": "REG-PLACEHOLDER-003",
+      "contact": "simulated@operator.example"
+    },
+    {
+      "id": "vessel-004",
+      "name": "MV Vembanad Runner",
+      "capacity_t": 12,
+      "operator_id": "op-002",
+      "hazard_certs": [],
+      "type": "cargo barge",
+      "draft_m": 1.5,
+      "home_jetty_id": "node-004",
+      "status": "pending_verification",
+      "registration_number": "REG-PLACEHOLDER-004",
+      "contact": "simulated@operator.example",
+      "source_status": "simulated",
+      "note": "Simulated vessel [simulated]. Name, registration and contact are fictional."
+    },
+    {
+      "id": "vessel-005",
+      "name": "MV Kayal Pearl",
+      "capacity_t": 18,
+      "operator_id": "op-001",
+      "hazard_certs": [
+        "liquid_bulk"
+      ],
+      "type": "mechanised vessel",
+      "draft_m": 2.2,
+      "home_jetty_id": "node-002",
+      "status": "verified",
+      "registration_number": "REG-PLACEHOLDER-005",
+      "contact": "simulated@operator.example",
+      "source_status": "simulated",
+      "note": "Simulated vessel [simulated]. Name, registration and contact are fictional."
+    },
+    {
+      "id": "vessel-006",
+      "name": "MV Ashtamudi Trader",
+      "capacity_t": 8,
+      "operator_id": "op-002",
+      "hazard_certs": [],
+      "type": "country boat",
+      "draft_m": 1.2,
+      "home_jetty_id": "node-003",
+      "status": "verified",
+      "registration_number": "REG-PLACEHOLDER-006",
+      "contact": "simulated@operator.example",
+      "source_status": "simulated",
+      "note": "Simulated vessel [simulated]. Name, registration and contact are fictional."
+    },
+    {
+      "id": "vessel-007",
+      "name": "MV Kumarakom Swift",
+      "capacity_t": 10,
+      "operator_id": "op-001",
+      "hazard_certs": [],
+      "type": "cargo barge",
+      "draft_m": 1.6,
+      "home_jetty_id": "node-004",
+      "status": "verified",
+      "registration_number": "REG-PLACEHOLDER-007",
+      "contact": "simulated@operator.example",
+      "source_status": "simulated",
+      "note": "Simulated vessel [simulated]. Name, registration and contact are fictional."
     }
   ],
   "operators": [
@@ -54,14 +175,14 @@
       "id": "op-001",
       "name": "Kerala Backwater Freight Co.",
       "contact": "simulated@kbfc.example",
-      "source_status": "assumed",
+      "source_status": "simulated",
       "note": "Simulated operator — no real personal data."
     },
     {
       "id": "op-002",
       "name": "Kuttanad Waterways Ltd.",
       "contact": "simulated@kwl.example",
-      "source_status": "assumed",
+      "source_status": "simulated",
       "note": "Simulated operator — no real personal data."
     }
   ],
@@ -72,10 +193,23 @@
       "origin_node_id": "node-001",
       "destination_node_id": "node-002",
       "departure_time": "06:00",
-      "days": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+      "days": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+      ],
       "available_capacity_t": 25,
-      "source_status": "assumed",
-      "note": "Simulated daily sailing Kochi Thevara → Alappuzha 06:00."
+      "source_status": "simulated",
+      "note": "Simulated daily sailing Kochi Thevara → Alappuzha 06:00.",
+      "route_node_ids": [
+        "node-001",
+        "node-004",
+        "node-002"
+      ]
     },
     {
       "id": "sailing-002",
@@ -83,10 +217,18 @@
       "origin_node_id": "node-001",
       "destination_node_id": "node-002",
       "departure_time": "14:00",
-      "days": ["Mon","Wed","Fri"],
+      "days": [
+        "Mon",
+        "Wed",
+        "Fri"
+      ],
       "available_capacity_t": 15,
-      "source_status": "assumed",
-      "note": "Simulated MWF afternoon sailing Kochi Thevara → Alappuzha 14:00."
+      "source_status": "simulated",
+      "note": "Simulated MWF afternoon sailing Kochi Thevara → Alappuzha 14:00.",
+      "route_node_ids": [
+        "node-001",
+        "node-002"
+      ]
     }
   ],
   "corridors": [
@@ -112,47 +254,500 @@
       "id": "cargo-001",
       "description": "Coconut oil cans",
       "weight_t": 10,
+      "cargo_class": "general",
       "shipper_id": "shipper-001",
       "origin_node_id": "node-001",
       "destination_node_id": "node-002",
-      "source_status": "assumed",
+      "source_status": "simulated",
       "note": "Simulated hero shipment for reference scenario."
     },
     {
       "id": "cargo-011",
       "description": "Rice bags",
       "weight_t": 4,
+      "cargo_class": "general",
       "shipper_id": "shipper-002",
       "origin_node_id": "node-001",
       "destination_node_id": "node-002",
-      "source_status": "assumed",
+      "source_status": "simulated",
       "note": "Simulated pooling cargo 1."
     },
     {
       "id": "cargo-012",
       "description": "Ceramic tiles",
       "weight_t": 3,
+      "cargo_class": "general",
       "shipper_id": "shipper-003",
       "origin_node_id": "node-001",
       "destination_node_id": "node-002",
-      "source_status": "assumed",
+      "source_status": "simulated",
       "note": "Simulated pooling cargo 2."
     },
     {
       "id": "cargo-013",
       "description": "Empty containers",
       "weight_t": 7,
+      "cargo_class": "general",
       "shipper_id": "shipper-004",
       "origin_node_id": "node-002",
       "destination_node_id": "node-001",
-      "source_status": "assumed",
+      "source_status": "simulated",
       "note": "Simulated backhaul cargo (reverse direction)."
+    },
+    {
+      "id": "cargo-003",
+      "description": "Diesel drums",
+      "weight_t": 10,
+      "cargo_class": "flammable",
+      "shipper_id": "shipper-001",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "source_status": "simulated",
+      "note": "Simulated flammable cargo for SC-1 hazmat filter test. All vessels without flammable cert should be excluded [simulated]."
+    },
+    {
+      "id": "cargo-004",
+      "description": "Industrial detonators",
+      "weight_t": 5,
+      "cargo_class": "explosive",
+      "shipper_id": "shipper-002",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "source_status": "simulated",
+      "note": "Simulated explosive cargo for SC-2 compliance gate test. No mode offered by default; compliance review required [simulated]."
+    },
+    {
+      "id": "cargo-005",
+      "description": "Fresh vegetables",
+      "weight_t": 8,
+      "cargo_class": "perishable",
+      "shipper_id": "shipper-003",
+      "origin_node_id": "node-001",
+      "destination_node_id": "node-002",
+      "source_status": "simulated",
+      "note": "Simulated perishable cargo for SC-6 perishable adjustments test [simulated]."
     }
   ],
   "shippers": [
-    {"id": "shipper-001", "name": "Simulated Shipper A", "source_status": "assumed", "note": "No real personal data."},
-    {"id": "shipper-002", "name": "Simulated Shipper B", "source_status": "assumed", "note": "No real personal data."},
-    {"id": "shipper-003", "name": "Simulated Shipper C", "source_status": "assumed", "note": "No real personal data."},
-    {"id": "shipper-004", "name": "Simulated Shipper D", "source_status": "assumed", "note": "No real personal data."}
+    {
+      "id": "shipper-001",
+      "name": "Simulated Shipper A",
+      "source_status": "simulated",
+      "note": "No real personal data."
+    },
+    {
+      "id": "shipper-002",
+      "name": "Simulated Shipper B",
+      "source_status": "simulated",
+      "note": "No real personal data."
+    },
+    {
+      "id": "shipper-003",
+      "name": "Simulated Shipper C",
+      "source_status": "simulated",
+      "note": "No real personal data."
+    },
+    {
+      "id": "shipper-004",
+      "name": "Simulated Shipper D",
+      "source_status": "simulated",
+      "note": "No real personal data."
+    }
+  ],
+  "warehouses": [
+    {
+      "id": "wh-001",
+      "name": "Kochi Riverside Storage",
+      "location_node_id": "node-001",
+      "total_capacity_t": 50.0,
+      "capacity_used_t": 0.0,
+      "storage_cost_per_t_per_day": 8.0,
+      "handling_in_cost_per_t": 25.0,
+      "handling_out_cost_per_t": 25.0,
+      "allowed_cargo_classes": [
+        "general",
+        "liquid_bulk"
+      ],
+      "source_status": "simulated",
+      "note": "Simulated warehouse near Kochi Thevara Jetty (node-001). Accepts general and liquid_bulk cargo [simulated]."
+    },
+    {
+      "id": "wh-002",
+      "name": "Alappuzha Agri Warehouse",
+      "location_node_id": "node-002",
+      "total_capacity_t": 30.0,
+      "capacity_used_t": 0.0,
+      "storage_cost_per_t_per_day": 6.0,
+      "handling_in_cost_per_t": 20.0,
+      "handling_out_cost_per_t": 20.0,
+      "allowed_cargo_classes": [
+        "general",
+        "perishable",
+        "flammable"
+      ],
+      "source_status": "simulated",
+      "note": "Simulated warehouse near Alappuzha Boat Jetty (node-002). Accepts general, perishable, and flammable cargo [simulated]."
+    }
+  ],
+  "delivery_history": [
+    {
+      "id": "del-001",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-001",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:30",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-002",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-002",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:35",
+      "delay_min": 5,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-003",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-003",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:20",
+      "delay_min": -10,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-004",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-004",
+      "planned_eta": "08:30",
+      "actual_arrival": "09:15",
+      "delay_min": 45,
+      "status": "late",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-005",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-005",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:30",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-006",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-006",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:42",
+      "delay_min": 12,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-007",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-007",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:30",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-008",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-008",
+      "planned_eta": "08:30",
+      "actual_arrival": "10:00",
+      "delay_min": 90,
+      "status": "late",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-009",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-009",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:25",
+      "delay_min": -5,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-010",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-010",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:30",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-011",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-011",
+      "planned_eta": "08:30",
+      "actual_arrival": "09:00",
+      "delay_min": 30,
+      "status": "incident",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-012",
+      "vessel_id": "vessel-001",
+      "booking_id": "seed-bk-012",
+      "planned_eta": "08:30",
+      "actual_arrival": "08:33",
+      "delay_min": 3,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-013",
+      "vessel_id": "vessel-002",
+      "booking_id": "seed-bk-013",
+      "planned_eta": "16:30",
+      "actual_arrival": "16:30",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-014",
+      "vessel_id": "vessel-002",
+      "booking_id": "seed-bk-014",
+      "planned_eta": "16:30",
+      "actual_arrival": "17:30",
+      "delay_min": 60,
+      "status": "late",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-015",
+      "vessel_id": "vessel-002",
+      "booking_id": "seed-bk-015",
+      "planned_eta": "16:30",
+      "actual_arrival": "16:40",
+      "delay_min": 10,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-016",
+      "vessel_id": "vessel-002",
+      "booking_id": "seed-bk-016",
+      "planned_eta": "16:30",
+      "actual_arrival": "17:45",
+      "delay_min": 75,
+      "status": "late",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-017",
+      "vessel_id": "vessel-002",
+      "booking_id": "seed-bk-017",
+      "planned_eta": "16:30",
+      "actual_arrival": "16:30",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-018",
+      "vessel_id": "vessel-002",
+      "booking_id": "seed-bk-018",
+      "planned_eta": "16:30",
+      "actual_arrival": "16:30",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-019",
+      "vessel_id": "vessel-002",
+      "booking_id": "seed-bk-019",
+      "planned_eta": "16:30",
+      "actual_arrival": "18:30",
+      "delay_min": 120,
+      "status": "incident",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-020",
+      "vessel_id": "vessel-003",
+      "booking_id": "seed-bk-020",
+      "planned_eta": "09:00",
+      "actual_arrival": "09:00",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-021",
+      "vessel_id": "vessel-003",
+      "booking_id": "seed-bk-021",
+      "planned_eta": "09:00",
+      "actual_arrival": "09:00",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-022",
+      "vessel_id": "vessel-003",
+      "booking_id": "seed-bk-022",
+      "planned_eta": "09:00",
+      "actual_arrival": "09:20",
+      "delay_min": 20,
+      "status": "late",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-023",
+      "vessel_id": "vessel-003",
+      "booking_id": "seed-bk-023",
+      "planned_eta": "09:00",
+      "actual_arrival": "09:05",
+      "delay_min": 5,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-024",
+      "vessel_id": "vessel-003",
+      "booking_id": "seed-bk-024",
+      "planned_eta": "09:00",
+      "actual_arrival": "09:00",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-025",
+      "vessel_id": "vessel-006",
+      "booking_id": "seed-bk-025",
+      "planned_eta": "11:00",
+      "actual_arrival": "11:00",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-026",
+      "vessel_id": "vessel-006",
+      "booking_id": "seed-bk-026",
+      "planned_eta": "11:00",
+      "actual_arrival": "11:40",
+      "delay_min": 40,
+      "status": "late",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-027",
+      "vessel_id": "vessel-006",
+      "booking_id": "seed-bk-027",
+      "planned_eta": "11:00",
+      "actual_arrival": "11:00",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-028",
+      "vessel_id": "vessel-006",
+      "booking_id": "seed-bk-028",
+      "planned_eta": "11:00",
+      "actual_arrival": "11:00",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-029",
+      "vessel_id": "vessel-007",
+      "booking_id": "seed-bk-029",
+      "planned_eta": "10:00",
+      "actual_arrival": "10:15",
+      "delay_min": 15,
+      "status": "late",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-030",
+      "vessel_id": "vessel-007",
+      "booking_id": "seed-bk-030",
+      "planned_eta": "10:00",
+      "actual_arrival": "10:00",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    },
+    {
+      "id": "del-031",
+      "vessel_id": "vessel-007",
+      "booking_id": "seed-bk-031",
+      "planned_eta": "10:00",
+      "actual_arrival": "10:00",
+      "delay_min": 0,
+      "status": "on_time",
+      "cargo_class": "general",
+      "source_status": "simulated"
+    }
+  ],
+  "disruption_scenarios": [
+    {
+      "id": "scn-001",
+      "type": "vessel_breakdown",
+      "location_node_id": "node-004",
+      "expected_duration_h": 4.0,
+      "label": "Vessel breakdown mid-transit (Vaikom)",
+      "source_status": "simulated"
+    },
+    {
+      "id": "scn-002",
+      "type": "jetty_closed",
+      "location_node_id": "node-002",
+      "expected_duration_h": 6.0,
+      "label": "Destination jetty closed (Alappuzha)",
+      "source_status": "simulated"
+    }
   ]
 }
