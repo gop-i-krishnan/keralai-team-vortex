@@ -1,18 +1,8 @@
-<!--
-SYNC IMPACT REPORT — for human review before commit; remove this block before merging.
-
-Version change:   (none) → 1.0.0  (initial ratification)
-Modified principles: N/A (initial document)
-Added sections:   Preamble, Principles 1–10, Governance, Quality Gates, Amendment Log
-Removed sections: N/A
-Deferred TODOs:   None — all placeholders resolved from user input and repository context.
--->
-
 # JalSetu Project Constitution
 
-**Version:** 1.0.0
-**Ratification date:** 2025-07-15
-**Last amended:** 2025-07-15
+**Version:** 1.1.0
+**Ratification date:** 2026-07-15
+**Last amended:** 2026-10-07
 **Status:** Active
 
 ---
@@ -224,29 +214,153 @@ well-explained prototype of a smaller scope beats an incomplete prototype of a l
 
 ---
 
+### P11 — Safety Before Convenience
+
+Hazardous or restricted cargo is never auto-matched. The system provides routing and eligibility
+guidance only — it MUST NOT provide handling or technical safety instructions.
+
+- Hazardous cargo classes covered by this principle include, at minimum: explosives, flammable
+  liquids and solids, toxic/corrosive substances, and liquid bulk cargoes subject to IWAI or
+  state-authority permit requirements.
+- Every hazard classification rule and vessel certification requirement MUST be stored in
+  `data/config.yaml` with `source_status: assumed` and a `note` stating
+  `"verify with IWAI / PESO / state authority before production use"`.
+- Vessels that lack the required certification for a hazard class MUST be excluded by a named
+  hard filter (e.g. `missing_hazmat_cert`) before any scoring takes place. They MUST appear in
+  the excluded list with that reason — not silently dropped.
+- No booking, match, or plan involving hazardous cargo MAY transition to `confirmed` state
+  without an explicit human compliance-review step, separate from and in addition to the
+  standard P7 booking confirmation.
+- The UI MUST display a clearly visible compliance-review banner for any shipment flagged as
+  hazardous. The banner MUST carry a text label; colour alone MUST NOT be the only indicator.
+- The system MUST NOT emit text that could be interpreted as handling, stowage, or emergency
+  response instructions. If asked, it MUST redirect the user to the relevant authority.
+
+**Rationale:** Hazardous cargo on inland waterways is governed by IWAI, PESO, and state-level
+regulations that change and carry criminal liability. A prototype that silently routes hazmat
+creates safety and legal risk that no hackathon exemption covers.
+
+---
+
+### P12 — Re-plan, Never Auto-Switch
+
+When a disruption occurs (sailing cancelled, vessel capacity reduced, deadline brought forward),
+the system proposes alternatives but MUST NOT activate any new plan without human confirmation.
+
+- The disruption engine MUST produce a structured `ReplanProposal` that includes, for each
+  alternative: mode, cost delta (₹), time delta (h), and whether the new plan meets the
+  original deadline. All deltas are relative to the disrupted plan.
+- A `ReplanProposal` MUST NOT update any booking, capacity figure, or sailing record in the
+  in-memory state. It is read-only until the cargo owner (and operator, where relevant) confirms.
+- The confirmation step for a re-plan follows the same two-step flow as P7: preview first,
+  explicit confirm second. Setting a flag in the proposal request body MUST NOT skip the confirm
+  endpoint.
+- The UI MUST present re-plan alternatives side-by-side with their cost/time/deadline impact and
+  require an explicit "Accept this plan" action. Dismissing the disruption notice MUST NOT
+  silently accept any alternative.
+- All cost and time figures in a `ReplanProposal` carry `source_status` tags and the same
+  port-to-port / truck-leg caveats as standard plans (P3).
+
+**Rationale:** Disruptions in freight logistics have cascading financial consequences. Automatic
+re-routing without owner consent would expose JalSetu to liability and undermine shipper trust.
+
+---
+
+### P13 — Simulated Is Labelled
+
+Any feature or data point that is simulated in the prototype MUST carry a visible `[simulated]`
+tag in every context where it appears: API responses, UI components, test fixtures, and
+documentation.
+
+- Simulated features include, at minimum: vessel tracking milestones, push notifications,
+  delivery history, vessel credential verification, and demand/volume statistics.
+- A `[simulated]` tag is distinct from `[assumed]`. `[assumed]` means a real-world value whose
+  exact figure is uncertain; `[simulated]` means a feature that does not exist yet and whose
+  output is fabricated for demo purposes.
+- No UI copy, documentation, or spoken demo script MAY claim that simulated features are live or
+  production-ready.
+- `data/seed.json` fields that represent simulated state (e.g. vessel position, on-time history)
+  MUST carry `"source_status": "simulated"` rather than `"assumed"`.
+- Adding a `source_status: simulated` value to `data/config.yaml` is a P3 violation; simulated
+  values belong in `data/seed.json` only.
+
+**Rationale:** Presenting simulated tracking or verification as live capability would constitute
+a material misrepresentation to evaluators and potential users.
+
+---
+
+### P14 — Reputation Is Evidence-Based and Fair
+
+Operator reliability statistics MUST be computed from recorded delivery history with a
+configured Bayesian prior, so that new operators are not penalised for having no history.
+
+- Every displayed reliability statistic MUST show the number of recorded trips on which it is
+  based (e.g. "87% on-time — 23 trips [simulated]").
+- The prior parameters (prior trip count and prior on-time rate) MUST be stored in
+  `data/config.yaml` with `source_status: assumed` and a note explaining the choice.
+- The reliability formula MUST be deterministic and pure (P2): given the same history and prior,
+  it MUST return the same score.
+- Reliability statistics in the seed data are simulated and MUST carry `"source_status":
+  "simulated"` per P13.
+- No reliability score MAY be displayed without its trip count. Displaying only a percentage
+  without a sample size is a violation.
+- The engine MUST NOT incorporate subjective ratings, star scores, or any input that is not
+  a recorded, timestamped delivery event.
+
+**Rationale:** Unfair reliability scoring could systematically exclude small or new operators from
+receiving cargo, creating an anti-competitive effect that would be difficult to detect and
+justify to regulators.
+
+---
+
+### P15 — Privacy by Minimisation
+
+Personal data is collected only to the minimum required for matching, and is never transmitted
+beyond the prototype boundary.
+
+- Phone numbers and email addresses MUST be scrubbed from any text before it is passed to an
+  LLM or any external service. The `scrub_pii()` function in `backend/engine/parser.py` is the
+  canonical implementation; all text-intake paths MUST call it.
+- Registration data stored in `data/seed.json` MUST contain only fields that are strictly
+  necessary for matching (operator id, simulated contact, capacity). No field MAY be added
+  unless its matching purpose is documented in the entry's `note`.
+- In the demo, all shipper and operator contact details MUST be fictional (e.g.
+  `simulated@operator.example`). No real names, phone numbers, or addresses MAY appear.
+- Any future addition of a real-data field requires an explicit amendment to this principle
+  with a documented legal basis and retention policy.
+- Compliance with this principle is verified by the existing `test_scrub_pii_removes_phone`
+  and `test_scrub_pii_removes_email` tests; those tests MUST NOT be removed or weakened.
+
+**Rationale:** Kerala's Personal Data Protection obligations and general responsible-AI practice
+both require that personal data collection is proportionate, transparent, and bounded. A
+prototype that accumulates unnecessary personal data is a liability, not an asset.
+
+---
+
 ## Governance
 
 ### Authority Hierarchy
 
+The following artifacts are listed in descending order of authority. Any artifact lower in
+this hierarchy that contradicts a higher one MUST be updated to conform. The constitution is
+**never** updated to conform to lower artifacts.
+
 ```
 constitution.md   (this file — supreme)
       ↓
-spec.md           (feature scope and user stories)
+spec.md           (feature scope and user stories — one file per feature under specs/)
       ↓
-plan.md           (design and architecture decisions)
+plan.md           (design and architecture decisions — one file per feature)
       ↓
-tasks.md          (implementation task list)
+tasks.md          (implementation task list — one file per feature)
       ↓
 source code
 ```
 
-Any artifact lower in this hierarchy that contradicts a higher one MUST be updated to conform.
-The constitution is never updated to conform to lower artifacts.
-
 ### Amendment Procedure
 
-1. Open a pull request or raise the amendment in the team channel with the proposed change and
-   the principle(s) affected.
+1. Open a pull request or raise the amendment in the team channel with the proposed change,
+   the principle(s) affected, and the rationale.
 2. State the version bump type (MAJOR / MINOR / PATCH) and justify it:
    - **MAJOR**: a principle is removed, fundamentally redefined, or made incompatible with a
      prior commitment.
@@ -254,28 +368,35 @@ The constitution is never updated to conform to lower artifacts.
    - **PATCH**: clarification, wording improvement, typo fix, non-semantic refinement.
 3. At least one other team member (or the project lead in a solo hackathon) MUST review and
    approve before the constitution is updated.
-4. Update `CONSTITUTION_VERSION` and `LAST_AMENDED_DATE` in the header.
-5. Append an entry to the Amendment Log below.
+4. Update the **Version**, **Last amended** header fields.
+5. Append an entry to the Amendment Log below, recording the version, date, author, and a
+   one-line rationale.
+6. Remove the SYNC IMPACT REPORT comment block before merging.
 
 ### Compliance Review
 
 - Before each demo milestone, the team MUST verify all Quality Gates (see below) pass.
 - Any new engine function merged without passing tests is an immediate P5 violation.
 - Any constant found hardcoded in source rather than in `data/config.yaml` is a P3 violation.
+- Any hazardous-cargo code path that bypasses the hard filter or the compliance-review step
+  is an immediate P11 violation.
+- Any simulated feature presented without a `[simulated]` tag is a P13 violation.
 - Violations discovered during review MUST be remediated before the demo, not deferred.
 
 ---
 
 ## Quality Gates
 
-All four gates MUST pass before the prototype is considered demo-ready:
+All gates MUST pass before the prototype is considered demo-ready:
 
 | Gate | Check |
 |---|---|
 | **Tests green** | `pytest backend/ -q` exits 0; no skipped tests without justification |
-| **Config-only constants** | `grep -rn` for hardcoded rates, speeds, emission factors, and weights in `*.py` and `*.jsx` returns no matches |
-| **Tags visible in UI** | Every numeric value rendered in the frontend carries a `[sourced]` or `[assumed]` badge in the DOM |
+| **Config-only constants** | Search for hardcoded rates, speeds, emission factors, hazard rules, and weights in `*.py` and `*.jsx` returns no matches |
+| **Tags visible in UI** | Every numeric value rendered in the frontend carries a `[sourced]`, `[assumed]`, or `[simulated]` badge in the DOM |
 | **Demo reset works** | `POST /api/demo/reset` followed by a full options request returns deterministic seed results within 1 second, with no network calls |
+| **Hazmat gate** | Any request with a hazardous cargo type returns a compliance-review flag and no auto-confirmed booking |
+| **Simulated tag** | Every feature listed under P13 renders a visible `[simulated]` tag in the UI and API response |
 
 ---
 
@@ -283,4 +404,5 @@ All four gates MUST pass before the prototype is considered demo-ready:
 
 | Version | Date | Author | Summary |
 |---|---|---|---|
-| 1.0.0 | 2025-07-15 | JalSetu team | Initial ratification — 10 principles, governance, quality gates |
+| 1.0.0 | 2026-07-15 | JalSetu team | Initial ratification — 10 principles, governance, quality gates |
+| 1.1.0 | 2026-10-07 | JalSetu team | Added P11 (Safety Before Convenience), P12 (Re-plan Never Auto-Switch), P13 (Simulated Is Labelled), P14 (Reputation Is Evidence-Based and Fair), P15 (Privacy by Minimisation); updated Governance authority hierarchy to name spec/plan/tasks files explicitly; added two new Quality Gates (Hazmat, Simulated tag); updated Compliance Review checklist. MINOR bump: no existing principle changed. |

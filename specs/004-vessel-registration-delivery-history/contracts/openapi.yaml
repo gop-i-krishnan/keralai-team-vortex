@@ -1,0 +1,865 @@
+openapi: 3.1.0
+info:
+  title: JalSetu Feature 004
+  version: 1.0.0
+  description: Generated from the running FastAPI app. Simulated demo controls are
+    labelled in their descriptions.
+paths:
+  /api/booking/{booking_id}/deliver:
+    post:
+      summary: Deliver Booking
+      description: 'Mark a booking delivered: append a delivery record, recompute
+        reliability (Feature 004).'
+      operationId: deliver_booking_api_booking__booking_id__deliver_post
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Booking Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/operator/message:
+    post:
+      summary: Operator Message
+      operationId: operator_message_api_operator_message_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperatorMessageRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/operator/{operator_id}/profile:
+    get:
+      summary: Operator Profile
+      description: Vessels with status and Bayesian reliability. Trip count always
+        accompanies the rate (P14).
+      operationId: operator_profile_api_operator__operator_id__profile_get
+      parameters:
+      - name: operator_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Operator Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/vessel/list:
+    get:
+      summary: List Vessels
+      operationId: list_vessels_api_vessel_list_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/vessel/register:
+    post:
+      summary: Register Vessel
+      operationId: register_vessel_api_vessel_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VesselRegisterRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/vessel/parse-message:
+    post:
+      summary: Parse Message
+      description: Extract vessel fields from free text. Changes no state (P7).
+      operationId: parse_message_api_vessel_parse_message_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VesselMessageRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/sailing/publish:
+    post:
+      summary: Publish Sailing
+      operationId: publish_sailing_api_sailing_publish_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SailingPublishRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/admin/vessel/{vessel_id}/verify:
+    post:
+      summary: Verify Vessel
+      operationId: verify_vessel_api_admin_vessel__vessel_id__verify_post
+      parameters:
+      - name: vessel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Vessel Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/admin/vessel/{vessel_id}/reinstate:
+    post:
+      summary: Reinstate Vessel
+      operationId: reinstate_vessel_api_admin_vessel__vessel_id__reinstate_post
+      parameters:
+      - name: vessel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Vessel Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/admin/vessel/{vessel_id}/suspend:
+    post:
+      summary: Suspend Vessel
+      operationId: suspend_vessel_api_admin_vessel__vessel_id__suspend_post
+      parameters:
+      - name: vessel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Vessel Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/sailing/list:
+    get:
+      summary: List Sailings
+      operationId: list_sailings_api_sailing_list_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    BookingRequest:
+      properties:
+        cargo_id:
+          type: string
+          title: Cargo Id
+        sailing_id:
+          type: string
+          title: Sailing Id
+        deadline_h:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: 'null'
+          title: Deadline H
+          description: Hours from ready_time; defaults to demo config
+        ready_time:
+          type: string
+          pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          title: Ready Time
+          description: HH:MM IST
+          default: 06:00
+        human_confirmed:
+          type: boolean
+          title: Human Confirmed
+          description: Must be True to confirm booking
+          default: false
+      type: object
+      required:
+      - cargo_id
+      - sailing_id
+      title: BookingRequest
+    CargoCreateRequest:
+      properties:
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        weight_t:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Weight T
+        cargo_class:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cargo Class
+          default: general
+        origin_node_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Origin Node Id
+        destination_node_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Destination Node Id
+      type: object
+      title: CargoCreateRequest
+    ComplianceReviewRequest:
+      properties:
+        reviewer_note:
+          type: string
+          title: Reviewer Note
+      type: object
+      required:
+      - reviewer_note
+      title: ComplianceReviewRequest
+    DeliverRequest:
+      properties:
+        actual_arrival:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actual Arrival
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      type: object
+      title: DeliverRequest
+    DisruptRequest:
+      properties:
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        scenario_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Scenario Id
+        location_node_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Location Node Id
+        expected_duration_h:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Expected Duration H
+        now_hhmm:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Now Hhmm
+          description: Demo/test override, HH:MM IST
+      type: object
+      title: DisruptRequest
+    ExcludedSailing:
+      properties:
+        sailing_id:
+          type: string
+          title: Sailing Id
+        vessel_id:
+          type: string
+          title: Vessel Id
+        reason:
+          type: string
+          title: Reason
+      type: object
+      required:
+      - sailing_id
+      - vessel_id
+      - reason
+      title: ExcludedSailing
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    MatchRequest:
+      properties:
+        cargo_id:
+          type: string
+          title: Cargo Id
+        sailing_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Sailing Ids
+        cargo_class:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cargo Class
+          description: Override; defaults to the cargo record class, then 'general'
+      type: object
+      required:
+      - cargo_id
+      title: MatchRequest
+    MatchResponse:
+      properties:
+        cargo_id:
+          type: string
+          title: Cargo Id
+        ranked:
+          items:
+            $ref: '#/components/schemas/MatchedSailing'
+          type: array
+          title: Ranked
+        excluded:
+          items:
+            $ref: '#/components/schemas/ExcludedSailing'
+          type: array
+          title: Excluded
+      type: object
+      required:
+      - cargo_id
+      - ranked
+      title: MatchResponse
+    MatchedSailing:
+      properties:
+        sailing_id:
+          type: string
+          title: Sailing Id
+        vessel_id:
+          type: string
+          title: Vessel Id
+        departure_time:
+          type: string
+          title: Departure Time
+        available_capacity_t:
+          type: number
+          title: Available Capacity T
+        score:
+          type: number
+          title: Score
+      type: object
+      required:
+      - sailing_id
+      - vessel_id
+      - departure_time
+      - available_capacity_t
+      - score
+      title: MatchedSailing
+    OperatorMessageRequest:
+      properties:
+        operator_id:
+          type: string
+          title: Operator Id
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - operator_id
+      - message
+      title: OperatorMessageRequest
+    OptionsRequest:
+      properties:
+        weight_t:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Weight T
+          description: Shipment weight in tonnes
+        origin_node_id:
+          type: string
+          title: Origin Node Id
+        destination_node_id:
+          type: string
+          title: Destination Node Id
+        ready_time:
+          type: string
+          title: Ready Time
+          description: Ready time HH:MM IST
+          default: 06:00
+        deadline_h:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Deadline H
+          description: Deadline in hours from ready_time
+        subsidy:
+          type: boolean
+          title: Subsidy
+          description: Apply water subsidy scenario (OFF by default)
+          default: false
+      type: object
+      required:
+      - weight_t
+      - origin_node_id
+      - destination_node_id
+      - deadline_h
+      title: OptionsRequest
+    OptionsResponse:
+      properties:
+        plans:
+          additionalProperties:
+            $ref: '#/components/schemas/PlanDetail'
+          type: object
+          title: Plans
+        recommended:
+          type: string
+          title: Recommended
+        scores:
+          additionalProperties:
+            type: number
+          type: object
+          title: Scores
+        why:
+          type: string
+          title: Why
+      type: object
+      required:
+      - plans
+      - recommended
+      - scores
+      - why
+      title: OptionsResponse
+    ParseRequest:
+      properties:
+        text:
+          type: string
+          title: Text
+          description: Free-text shipment request from shipper/operator
+      type: object
+      required:
+      - text
+      title: ParseRequest
+    ParsedShipment:
+      properties:
+        weight_t:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Weight T
+        origin_raw:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Origin Raw
+        destination_raw:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Destination Raw
+        origin_node_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Origin Node Id
+        destination_node_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Destination Node Id
+        deadline_raw:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Deadline Raw
+        deadline_h:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Deadline H
+        confidence:
+          type: number
+          title: Confidence
+          default: 0.0
+        needs_review:
+          type: boolean
+          title: Needs Review
+          default: true
+        method:
+          type: string
+          title: Method
+          default: regex
+      type: object
+      title: ParsedShipment
+    PlanDetail:
+      properties:
+        mode:
+          type: string
+          title: Mode
+        cost_inr:
+          type: number
+          title: Cost Inr
+        time_h:
+          type: number
+          title: Time H
+        co2_kg:
+          type: number
+          title: Co2 Kg
+        distance_km:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Distance Km
+        source_status:
+          type: string
+          title: Source Status
+        note:
+          type: string
+          title: Note
+        subsidy_applied:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Subsidy Applied
+        wait_h:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Wait H
+        sail_time_h:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Sail Time H
+        sailing_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sailing Id
+      type: object
+      required:
+      - mode
+      - cost_inr
+      - time_h
+      - co2_kg
+      - source_status
+      - note
+      title: PlanDetail
+    ReplanConfirmRequest:
+      properties:
+        alternative_id:
+          type: string
+          title: Alternative Id
+      type: object
+      required:
+      - alternative_id
+      title: ReplanConfirmRequest
+    ReplanReviewRequest:
+      properties:
+        reviewer_note:
+          type: string
+          title: Reviewer Note
+      type: object
+      required:
+      - reviewer_note
+      title: ReplanReviewRequest
+    SailingPublishRequest:
+      properties:
+        vessel_id:
+          type: string
+          title: Vessel Id
+        route_node_ids:
+          items:
+            type: string
+          type: array
+          title: Route Node Ids
+        weekdays:
+          items:
+            type: string
+          type: array
+          title: Weekdays
+        departure_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Departure Time
+        price_per_t:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Price Per T
+        capacity_offered_t:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Capacity Offered T
+      type: object
+      required:
+      - vessel_id
+      title: SailingPublishRequest
+    StagingConfirmRequest:
+      properties:
+        proposal_id:
+          type: string
+          title: Proposal Id
+      type: object
+      required:
+      - proposal_id
+      title: StagingConfirmRequest
+    StagingProposalRequest:
+      properties:
+        cargo_id:
+          type: string
+          title: Cargo Id
+        next_sailing_wait_h:
+          type: number
+          title: Next Sailing Wait H
+        deadline_h:
+          type: number
+          title: Deadline H
+      type: object
+      required:
+      - cargo_id
+      - next_sailing_wait_h
+      - deadline_h
+      title: StagingProposalRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    VesselMessageRequest:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - message
+      title: VesselMessageRequest
+    VesselRegisterRequest:
+      properties:
+        vessel_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Vessel Name
+        registration_number:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Registration Number
+          description: Placeholder - not validated
+        vessel_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Vessel Type
+        capacity_t:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Capacity T
+        draft_m:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Draft M
+        home_jetty_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Home Jetty Id
+        hazard_certs:
+          items:
+            type: string
+          type: array
+          title: Hazard Certs
+        contact:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Contact
+        operator_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Operator Id
+      type: object
+      title: VesselRegisterRequest
+    ViabilityResponse:
+      properties:
+        d_star_km:
+          type: number
+          title: D Star Km
+        corridors:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Corridors
+        demand_summary:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Demand Summary
+      type: object
+      required:
+      - d_star_km
+      - corridors
+      - demand_summary
+      title: ViabilityResponse
+    WarehouseRegisterRequest:
+      properties:
+        name:
+          type: string
+          title: Name
+        location_node_id:
+          type: string
+          title: Location Node Id
+        total_capacity_t:
+          type: number
+          title: Total Capacity T
+        storage_cost_per_t_per_day:
+          type: number
+          title: Storage Cost Per T Per Day
+        handling_in_cost_per_t:
+          type: number
+          title: Handling In Cost Per T
+        handling_out_cost_per_t:
+          type: number
+          title: Handling Out Cost Per T
+        allowed_cargo_classes:
+          items:
+            type: string
+          type: array
+          title: Allowed Cargo Classes
+      type: object
+      required:
+      - name
+      - location_node_id
+      - total_capacity_t
+      - storage_cost_per_t_per_day
+      - handling_in_cost_per_t
+      - handling_out_cost_per_t
+      - allowed_cargo_classes
+      title: WarehouseRegisterRequest
