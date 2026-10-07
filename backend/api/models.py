@@ -45,6 +45,7 @@ class OptionsResponse(BaseModel):
 class MatchRequest(BaseModel):
     cargo_id: str
     sailing_ids: Optional[list[str]] = None  # None = use all available sailings
+    cargo_class: Optional[str] = Field(None, description="Override; defaults to the cargo record class, then 'general'")
 
 
 class MatchedSailing(BaseModel):
@@ -55,14 +56,23 @@ class MatchedSailing(BaseModel):
     score: float
 
 
+class ExcludedSailing(BaseModel):
+    sailing_id: str
+    vessel_id: str
+    reason: str  # "mode_not_permitted_for_class" | "missing_hazmat_cert"
+
+
 class MatchResponse(BaseModel):
     cargo_id: str
     ranked: list[MatchedSailing]
+    excluded: list[ExcludedSailing] = Field(default_factory=list)
 
 
 class BookingRequest(BaseModel):
     cargo_id: str
     sailing_id: str
+    deadline_h: Optional[float] = Field(None, gt=0, description="Hours from ready_time; defaults to demo config")
+    ready_time: str = Field("06:00", pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$", description="HH:MM IST")
     human_confirmed: bool = Field(False, description="Must be True to confirm booking")
 
 
@@ -112,3 +122,62 @@ class ViabilityResponse(BaseModel):
     d_star_km: float
     corridors: list[dict]
     demand_summary: list[dict]
+
+
+# ── Feature 004: Vessel registration and delivery history ────────────────────
+# Fields are Optional so the engine (registry.py) reports per-field {field, code, message}.
+
+class VesselRegisterRequest(BaseModel):
+    vessel_name: Optional[str] = None
+    registration_number: Optional[str] = Field(None, description="Placeholder - not validated")
+    vessel_type: Optional[str] = None
+    capacity_t: Optional[float | str] = None
+    draft_m: Optional[float | str] = None
+    home_jetty_id: Optional[str] = None
+    hazard_certs: list[str] = Field(default_factory=list)
+    contact: Optional[str] = None
+    operator_id: Optional[str] = None
+
+
+class SailingPublishRequest(BaseModel):
+    vessel_id: str
+    route_node_ids: list[str] = Field(default_factory=list)
+    weekdays: list[str] = Field(default_factory=list)
+    departure_time: Optional[str] = None
+    price_per_t: Optional[float | str] = None
+    capacity_offered_t: Optional[float | str] = None
+
+
+class DeliverRequest(BaseModel):
+    actual_arrival: Optional[str] = None
+    status: Optional[str] = None
+
+
+class VesselMessageRequest(BaseModel):
+    message: str
+
+
+# ── Feature 005: disruption, re-plan, cargo ──────────────────────────────────
+
+class DisruptRequest(BaseModel):
+    type: Optional[str] = None
+    scenario_id: Optional[str] = None
+    location_node_id: Optional[str] = None
+    expected_duration_h: Optional[float | str] = None
+    now_hhmm: Optional[str] = Field(None, description="Demo/test override, HH:MM IST")
+
+
+class ReplanConfirmRequest(BaseModel):
+    alternative_id: str
+
+
+class ReplanReviewRequest(BaseModel):
+    reviewer_note: str
+
+
+class CargoCreateRequest(BaseModel):
+    description: Optional[str] = None
+    weight_t: Optional[float | str] = None
+    cargo_class: Optional[str] = "general"
+    origin_node_id: Optional[str] = None
+    destination_node_id: Optional[str] = None

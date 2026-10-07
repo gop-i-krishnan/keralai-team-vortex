@@ -9,6 +9,7 @@ from backend.api.routers import (
     options, demo, config_router,
     match, booking, parse, viability, operator,
 )
+from backend.api.routers import compliance, warehouse_router, vessel, tracking, replan_router, cargo
 
 app = FastAPI(
     title="JalSetu",
@@ -31,6 +32,12 @@ app.include_router(booking.router,        prefix="/api")
 app.include_router(parse.router,          prefix="/api")
 app.include_router(viability.router,      prefix="/api")
 app.include_router(operator.router,       prefix="/api")
+app.include_router(compliance.router,     prefix="/api")
+app.include_router(warehouse_router.router, prefix="/api")
+app.include_router(vessel.router,           prefix="/api")
+app.include_router(tracking.router,         prefix="/api")
+app.include_router(replan_router.router,    prefix="/api")
+app.include_router(cargo.router,            prefix="/api")
 
 
 @app.get("/")

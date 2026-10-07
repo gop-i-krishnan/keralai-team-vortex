@@ -122,9 +122,9 @@ def test_booking_preview():
         "sailing_id": "sailing-001",
         "human_confirmed": False,
     })
-    assert r.status_code == 200
+    assert r.status_code == 201
     data = r.json()
-    assert data["status"] == "preview"
+    assert data["status"] == "pending"
     assert data["human_confirmed"] is False
 
 
