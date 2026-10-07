@@ -10,9 +10,12 @@ export default function ViabilityChart({ data }) {
     <div className="card section">
       <h2>Corridor Viability</h2>
       <p className="muted">
-        Break-even distance d* = <strong>{d_star_km?.toFixed(1)} km</strong>
+        Road-equivalent distance d* = <strong>{d_star_km?.toFixed(1)} km</strong>
         <SourceBadge status="assumed" />
-        &nbsp;(loading + unloading + freight) ÷ road rate
+        &nbsp;— minimum corridor distance at which hybrid barge cost equals road cost per tonne.
+        Formula: (jetty loading + barge freight + jetty unloading) ÷ road rate per t·km.
+        Water variable cost treated as ~0 for flat-rate Kerala IWT routes [assumed].
+        Cost coverage: port-to-port only; truck legs not included.
       </p>
       <table style={{ width: "100%", marginTop: 12, borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
@@ -31,13 +34,13 @@ export default function ViabilityChart({ data }) {
               <tr key={c.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
                 <td style={{ padding: "4px 8px" }}>{c.origin_node_id} → {c.destination_node_id}</td>
                 <td style={{ padding: "4px 8px" }}>{c.distance_km} km <SourceBadge status={c.source_status} /></td>
-                <td style={{ padding: "4px 8px" }}>{d_star_km?.toFixed(1)} km</td>
+                <td style={{ padding: "4px 8px" }}>{d_star_km?.toFixed(1)} km <SourceBadge status="assumed" /></td>
                 <td style={{ padding: "4px 8px" }}>
                   {c.viable
-                    ? <span className="badge-sourced">✓ Viable</span>
-                    : <span className="badge-assumed">✗ Below d*</span>}
+                    ? <span className="status ok">✓ Viable</span>
+                    : <span className="status warn">✗ Below d*</span>}
                 </td>
-                <td style={{ padding: "4px 8px" }}>{dem ? `${dem.total_t} t` : "—"}</td>
+                <td style={{ padding: "4px 8px" }}>{dem ? <>{dem.total_t} t <SourceBadge status="simulated" /></> : "—"}</td>
               </tr>
             );
           })}

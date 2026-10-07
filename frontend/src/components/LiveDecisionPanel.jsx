@@ -9,6 +9,7 @@ const NODES = [
   { id: "node-001", label: "Kochi Thevara Jetty" },
   { id: "node-002", label: "Alappuzha Boat Jetty" },
   { id: "node-003", label: "Kollam Jetty" },
+  { id: "node-004", label: "Vaikom Jetty" },
 ];
 
 const MODE_COLOR = { road: "#f59e0b", hybrid: "#3b82d4" };
@@ -39,7 +40,7 @@ function Co2Bar({ road, hybrid }) {
   );
 }
 
-export default function LiveDecisionPanel({ onSave }) {
+export default function LiveDecisionPanel({ onPostCargo }) {
   const [weight, setWeight]   = useState(10);
   const [origin, setOrigin]   = useState("node-001");
   const [dest, setDest]       = useState("node-002");
@@ -167,6 +168,11 @@ export default function LiveDecisionPanel({ onSave }) {
               road={road?.co2_kg}
               hybrid={hybrid?.co2_kg}
             />
+            {onPostCargo && (
+              <button className="btn-primary" onClick={() => onPostCargo({ weight_t: weight, origin_node_id: origin, destination_node_id: dest })}>
+                Like this? Post this cargo to find a sailing →
+              </button>
+            )}
           </>
         )}
       </div>

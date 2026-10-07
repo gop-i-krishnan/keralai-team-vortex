@@ -1,7 +1,22 @@
 // frontend/src/components/CorridorMap.jsx
 // Static SVG map of Kerala NW-3 waterway corridor.
 // No API, no tiles — works fully offline (Constitution P8).
+import { api, getViability, getAssumptions } from "../api";
+import { useFetch } from "./ui";
+import SourceBadge from "./SourceBadge";
+
+// Corridor distances and CO2 factors come from the API (config / seed), never hardcoded (P3).
+async function loadFacts() {
+  const [v, a, n] = await Promise.all([getViability(), getAssumptions(), api.nodes()]);
+  const name = (id) => n.nodes.find((x) => x.id === id)?.name || id;
+  const cfg = (section, key) => a.assumptions.find((x) => x.section === section && x.key === key)?.value;
+  const rows = v.corridors.map((c) => ({ id: c.id, label: `${name(c.origin_node_id)} → ${name(c.destination_node_id)}`, km: c.distance_km, status: c.source_status }));
+  return { rows, total: rows.reduce((t, r) => t + r.km, 0), road: cfg("road", "co2_kg_per_t_km"), water: cfg("water", "co2_kg_per_t_km") };
+}
+
 export default function CorridorMap({ highlight }) {
+  const facts = useFetch(loadFacts, []);
+  const kmLabel = (id) => { const r = facts.data?.rows.find((x) => x.id === id); return r ? `~${r.km} km` : ""; };
   // Rough pixel positions mapped from lat/lon for display only
   const nodes = [
     { id: "node-001", label: "Kochi\nThevara", x: 210, y: 80,  type: "major" },
@@ -10,8 +25,8 @@ export default function CorridorMap({ highlight }) {
   ];
 
   const routes = [
-    { from: { x: 210, y: 80 },  to: { x: 190, y: 210 }, label: "~75 km", id: "corridor-001" },
-    { from: { x: 190, y: 210 }, to: { x: 170, y: 360 }, label: "~80 km", id: "corridor-002" },
+    { from: { x: 210, y: 80 },  to: { x: 190, y: 210 }, label: kmLabel("corridor-001"), id: "corridor-001" },
+    { from: { x: 190, y: 210 }, to: { x: 170, y: 360 }, label: kmLabel("corridor-002"), id: "corridor-002" },
   ];
 
   const roadRoutes = [
@@ -84,23 +99,35 @@ export default function CorridorMap({ highlight }) {
               </tr>
             </thead>
             <tbody>
-              <tr><td style={{ padding: "4px 8px" }}>Kochi → Alappuzha</td><td style={{ padding: "4px 8px", textAlign: "right" }}>~75 km</td></tr>
-              <tr><td style={{ padding: "4px 8px" }}>Alappuzha → Kollam</td><td style={{ padding: "4px 8px", textAlign: "right" }}>~80 km</td></tr>
-              <tr style={{ background: "#f7f8fa" }}><td style={{ padding: "4px 8px", fontWeight: 600 }}>Total NW-3</td><td style={{ padding: "4px 8px", textAlign: "right", fontWeight: 600 }}>~155 km</td></tr>
+              {facts.loading && <tr><td colSpan={2} className="muted" style={{ padding: "4px 8px" }}>Loading…</td></tr>}
+              {facts.error && <tr><td colSpan={2} className="muted" style={{ padding: "4px 8px" }}>Facts unavailable (backend not reachable).</td></tr>}
+              {facts.data?.rows.map((r) => (
+                <tr key={r.id}><td style={{ padding: "4px 8px" }}>{r.label}</td>
+                  <td style={{ padding: "4px 8px", textAlign: "right" }}>~{r.km} km <SourceBadge status={r.status} /></td></tr>
+              ))}
+              {facts.data && (
+                <tr style={{ background: "#f7f8fa" }}><td style={{ padding: "4px 8px", fontWeight: 600 }}>Total (corridors listed)</td>
+                  <td style={{ padding: "4px 8px", textAlign: "right", fontWeight: 600 }}>~{facts.data.total} km</td></tr>
+              )}
             </tbody>
           </table>
 
           <div style={{ marginTop: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: "#57606a", marginBottom: 6 }}>CO₂ advantage</div>
-            <div style={{ fontSize: 13 }}>🚛 Road: <strong>0.062</strong> kg/t·km</div>
-            <div style={{ fontSize: 13 }}>⛵ Water: <strong>0.019</strong> kg/t·km</div>
-            <div style={{ fontSize: 12, color: "#16a34a", marginTop: 4, fontWeight: 600 }}>
-              Water is 3× cleaner per tonne-km
-            </div>
+            {facts.data && (
+              <>
+                <div style={{ fontSize: 13 }}>🚛 Road: <strong>{facts.data.road}</strong> kg/t·km <SourceBadge status="sourced" /></div>
+                <div style={{ fontSize: 13 }}>⛵ Water: <strong>{facts.data.water}</strong> kg/t·km <SourceBadge status="sourced" /></div>
+                <div style={{ fontSize: 12, color: "#16a34a", marginTop: 4, fontWeight: 600 }}>
+                  Water is {(facts.data.road / facts.data.water).toFixed(1)}× cleaner per tonne-km
+                </div>
+              </>
+            )}
           </div>
 
           <div style={{ marginTop: 14, fontSize: 11, color: "#57606a" }}>
-            Distances approximate [assumed] · CO₂ factors IPCC AR6 [sourced]
+            Terminal names illustrative — verify with IWAI NW-3 terminal list [assumed]
+            <br />Distances approximate · CO₂ factors cited to IPCC AR6 (not re-checked by the team)
           </div>
         </div>
       </div>

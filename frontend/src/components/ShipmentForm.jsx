@@ -5,6 +5,7 @@ const NODES = [
   { id: "node-001", label: "Kochi Thevara Jetty" },
   { id: "node-002", label: "Alappuzha Boat Jetty" },
   { id: "node-003", label: "Kollam Jetty" },
+  { id: "node-004", label: "Vaikom Jetty" },
 ];
 
 export default function ShipmentForm({ onSubmit, loading }) {

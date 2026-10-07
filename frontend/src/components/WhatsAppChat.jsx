@@ -113,7 +113,7 @@ export default function WhatsAppChat() {
         }}>{OPERATOR.avatar}</div>
         <div>
           <div style={{ fontWeight: 600, fontSize: 14 }}>JalSetu AI Assistant</div>
-          <div style={{ fontSize: 11, opacity: 0.8 }}>Operator interface · Simulated · No real WhatsApp</div>
+          <div style={{ fontSize: 11, opacity: 0.8 }}>Operator interface · Simulated · No real WhatsApp · Granite integration implemented; demo uses offline adapter</div>
         </div>
       </div>
 
