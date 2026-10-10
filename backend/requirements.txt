@@ -1,10 +1,9 @@
+# Runtime dependencies (pinned). Dev/test tools live in requirements-dev.txt.
 fastapi==0.142.2
 uvicorn[standard]==0.54.0
 pydantic==2.13.5
 pyyaml==6.0.3
 rapidfuzz==3.14.6
-pytest==9.1.1
-httpx==0.28.1
 python-dotenv==1.2.4
 # Optional, only for IBM watsonx parsing (JALSETU_MOCK_LLM=0); not needed for the offline demo:
 # ibm-watsonx-ai

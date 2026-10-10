@@ -1,6 +1,6 @@
 # JalSetu — Submission
 
-KeralAI Grand Challenge 2026 (Kochi) · Team Vortex · Problem 07 (Backwater Cargo Exchange)
+IBM x Kerala Government Hackathon 2026 · Challenge 7 (Backwater Cargo Exchange) · Team Vortex
 *Written 7 Oct 2026. Describes only what runs in this repository; status labels are defined in §5.*
 
 ## 1. In one paragraph
@@ -39,7 +39,7 @@ figures `assumed`):
 | 10 h | hybrid | Rs 5,800 | 6.3 h | 9.7 kg |
 | 3 h | road | Rs 6,470 | 1.6 h | 39.3 kg |
 
-For the 10 h case, road would cost Rs 6,470 and emit 39.3 kg, so water saves about Rs 670 and 29.6 kg CO₂ **for the
+For the 10 h case, road would cost Rs 6,470 and emit 39.3 kg, so water saves about Rs 670 (about 10%) and 29.6 kg CO₂ (about 75%) **for the
 barge leg only**. First- and last-mile trucking is not included in the hybrid figures, so this is not a door-to-door
 saving. The 3 h case shows the system recommending road when road is the better answer.
 
@@ -64,6 +64,11 @@ saving. The 3 h case shows the system recommending road when road is the better 
   separate explicit confirm. Proposals are read-only, and tests check they leave bookings unchanged.
 - **Reliability that does not punish newcomers.** A Bayesian prior gives new vessels a starting score, and the number
   of recorded trips is always shown beside the percentage.
+- **Spec-driven development with Spec Kit.** We wrote a constitution (15 principles) first, then took each of six features through
+  specify, clarify, plan, tasks, analyze and implement, with tests before code. IBM Bob and Claude Code implemented against those specs;
+  the specs, tests and gates decided what counted as correct. The analyze step caught real defects before the demo (a random id inside the
+  deterministic engine, hardcoded fallback weights, a re-plan log entry that broke the read-only rule), and all were fixed. The Spec Kit
+  structure and workflow were followed for all six features; for the last two the steps were run by hand rather than through its command line.
 - **Shipment first, not boat first.** Road, hybrid and re-plan alternatives are compared on equal terms; road wins when
   it is better.
 
@@ -218,7 +223,7 @@ The full list is in [SPEC.md §6](SPEC.md#6-limitations).
 
 ## 15. Disclosures
 
-- **AI coding tools:** IBM Bob (throughout development) and Claude Code by Anthropic (Features 004–005, the role-based UI, cleanup, and this documentation).
+- **AI coding tools:** **IBM Bob**, IBM's AI coding agent and our development partner throughout (code generation, spec writing, task implementation), and Claude Code by Anthropic (Features 004–005, the role-based UI, cleanup, and this documentation).
 - **Specification tooling:** Spec Kit (spec/plan/tasks structure; the CLI itself was not run for Features 004/005).
 - **LLM provider:** IBM watsonx.ai Granite 13B chat v2, optional, text-to-fields only, **not used in this submission**.
 - **Libraries:** FastAPI, Starlette, Uvicorn, Pydantic, PyYAML, RapidFuzz, httpx, python-dotenv, pytest; React, React DOM, Vite,

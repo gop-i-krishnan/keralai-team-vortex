@@ -1,6 +1,6 @@
 # JalSetu — Kerala waterway shipment decision engine
 
-KeralAI Grand Challenge 2026 (Kochi), Team Vortex, Problem 07 (Backwater Cargo Exchange).
+IBM x Kerala Government Hackathon 2026, Challenge 7 (Backwater Cargo Exchange), Team Vortex.
 A **prototype** that compares road and hybrid (road + water) door-to-door plans for a shipment, recommends
 one with a plain-English reason, matches the shipment to vessel sailings, and lets a person confirm
 bookings, handle simulated disruptions, and register vessels and warehouses.
@@ -9,6 +9,7 @@ bookings, handle simulated disruptions, and register vessels and warehouses.
 - No LLM prices, ranks, scores or recommends. The demo never calls an LLM.
 - A person must confirm every booking, every re-plan, and every hazardous-cargo booking.
 - Everything runs offline. No API keys. State is in memory.
+- Built spec-first (Spec Kit workflow) with **IBM Bob**, IBM's AI coding agent, as our development partner for code generation, spec writing and task implementation, with Claude Code supporting later work. See [docs/disclosures.md](docs/disclosures.md).
 
 Full status of every feature: **[docs/SPEC.md](docs/SPEC.md)**. Competition write-up: **[docs/SUBMISSION.md](docs/SUBMISSION.md)**.
 
@@ -43,32 +44,30 @@ see screenshots in `docs/screenshots/`.
 
 Prerequisites: Python and Node.js. Tested only on Python 3.14.5 and Node.js 24.14.0 (Windows 11); other versions are untested.
 
+**Isolation:** everything Python runs inside the project-local `.venv`. Nothing is installed globally, and
+`pytest` refuses to run outside a virtual environment.
+
 **Terminal 1 — backend, from the repository root**
 
-```
-python -m venv .venv
-# Windows PowerShell:  .venv\Scripts\Activate.ps1      macOS/Linux:  source .venv/bin/activate
-pip install -r backend/requirements.txt
-```
-Then start it (bash / macOS / Linux / Git Bash):
-```
-JALSETU_MOCK_LLM=1 python -m uvicorn backend.api.main:app --port 8000
-```
-Windows PowerShell:
-```
+```powershell
+.\setup.ps1                      # Windows (macOS/Linux/Git Bash: ./setup.sh)
+.\.venv\Scripts\Activate.ps1     # macOS/Linux: source .venv/bin/activate
 $env:JALSETU_MOCK_LLM="1"; python -m uvicorn backend.api.main:app --port 8000
 ```
+bash / macOS / Linux: `JALSETU_MOCK_LLM=1 python -m uvicorn backend.api.main:app --port 8000`
+
+`setup` creates `.venv`, installs the pinned `backend/requirements-dev.txt` (runtime-only: `backend/requirements.txt`),
+copies `.env.example` to `.env`, and runs `npm install` for the frontend. It is safe to re-run.
 
 **Terminal 2 — frontend**
 
 ```
 cd frontend
-npm install
-npm run dev
+npm run dev   # dependencies already installed by setup
 ```
 Open **http://localhost:5173**. API docs at http://localhost:8000/docs. (CORS allows only port 5173.)
 
-**Run the tests**
+**Run the tests** (with `.venv` active)
 ```
 python -m pytest backend/ -q
 ```
@@ -89,7 +88,7 @@ Expected: `261 passed`.
 ![Disruption, notification preview and ranked alternatives](docs/screenshots/05-shipment-disruption-ranked-alternatives.png)
 
 More screenshots (all taken from the running app): `docs/screenshots/` and [docs/SPEC.md](docs/SPEC.md#4-screenshots-real-from-the-running-app).
-To regenerate them: `pip install websockets`, start both servers, then `python docs/screenshots/capture.py`
+To regenerate them: `pip install websockets` (inside `.venv`), start both servers, then `python docs/screenshots/capture.py`
 (needs Chrome or Edge; dev tooling only).
 
 ## Data honesty
